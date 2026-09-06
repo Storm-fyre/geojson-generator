@@ -1,0 +1,68 @@
+{
+  "forest_mountain": {
+    "name": "Forest & Mountain Soils",
+    "color": "#2e7d32",
+    "sub_type": "Podzolic, Skeletal & Alpine Meadow Soils",
+    "geological_origin": "Formed in high-altitude forest ecosystems under varying precipitation; heavily influenced by aspect, slope, and snowline.",
+    "texture": "Loamy and silty in valley basins; coarse-grained, gravelly, and stony on steep upper ridges.",
+    "chemical_profile": "Rich in organic matter (humus) in dense forest tracts; acidic with low humus in alpine/snow-covered zones. Deficient in potash, phosphorus, and lime.",
+    "distinctive_features": "Heterogeneous profiles showing weak horizon differentiation; highly vulnerable to sheet and gully erosion on deforested slopes.",
+    "major_crops": "Tea, Coffee, Spices, Temperate Orchards (Apple, Pear, Peach, Walnut), Maize, Barley",
+    "states_covered": ["Jammu and Kashmir", "Ladakh", "Himachal Pradesh", "Uttarakhand", "Sikkim", "Arunachal Pradesh", "Higher elevations of Western Ghats"]
+  },
+  "alluvial": {
+    "name": "Alluvial Soils",
+    "color": "#a1d971",
+    "sub_type": "Khadar (New Alluvium) & Bhangar (Old Alluvium)",
+    "geological_origin": "Depositional sediments laid down by the Indus, Ganga, Brahmaputra, and peninsular river deltas across the Indo-Gangetic trough.",
+    "texture": "Varies from sandy loam to silty loam and clayey; porous, soft, and easy to cultivate.",
+    "chemical_profile": "Rich in Potash and Phosphoric acid; moderately supplied with Lime. Markedly deficient in Nitrogen and Organic Humus.",
+    "distinctive_features": "Most agriculturally productive and widespread soil group (~40% of India's land area). Bhangar contains calcic nodules (Kankar), while Khadar is continuously renewed by annual floods.",
+    "major_crops": "Wheat, Rice, Sugarcane, Jute, Pulses, Oilseeds, Maize",
+    "states_covered": ["Punjab", "Haryana", "Uttar Pradesh", "Bihar", "West Bengal", "Assam", "Coastal deltas of Odisha, Andhra Pradesh, and Tamil Nadu"]
+  },
+  "red_yellow": {
+    "name": "Red and Yellow Soils",
+    "color": "#e53935",
+    "sub_type": "Omnibus Group (Red in oxidized state, Yellow when hydrated)",
+    "geological_origin": "Prolonged weathering of ancient crystalline igneous (granites, gneisses) and metamorphic rocks under low-rainfall conditions.",
+    "texture": "Porous, crumbly, and friable structure; coarse-grained in uplands and fertile, finer-grained clayey in river valleys.",
+    "chemical_profile": "Rich in Iron oxides (diffused iron imparting the distinct red hue) and Potash. Severely deficient in Nitrogen, Phosphorus, Humus, and Lime.",
+    "distinctive_features": "Covers ~18% of India. Responds exceptionally well to chemical fertilizers and artificial irrigation.",
+    "major_crops": "Groundnut, Millets (Ragi, Bajra), Tobacco, Pulses, Cotton, Oilseeds, Rice (in irrigated valley bottoms)",
+    "states_covered": ["Tamil Nadu", "Karnataka", "Southern Maharashtra", "Telangana", "Andhra Pradesh", "Odisha", "Chhattisgarh", "Jharkhand", "Northeastern Hill States"]
+  },
+  "black": {
+    "name": "Black Soils (Regur)",
+    "color": "#424242",
+    "sub_type": "Regur / Tropical Chernozems / Vertisols",
+    "geological_origin": "In-situ weathering of Cretaceous volcanic basaltic lava sheets across the Deccan Traps.",
+    "texture": "Extremely fine-grained and clayey (>50% clay content); highly plastic and sticky when wet.",
+    "chemical_profile": "Rich in Lime, Iron, Magnesia, Alumina, Potash, and Calcium Carbonate. Deficient in Nitrogen, Phosphorus, and Organic Humus.",
+    "distinctive_features": "Remarkable moisture-retention capacity; swells when wet and shrinks during summer dry periods, developing wide, deep cracks that cause natural aeration ('self-ploughing' effect).",
+    "major_crops": "Cotton (classic Black Cotton soil), Soybean, Sugarcane, Jowar, Wheat, Sunflower, Tobacco",
+    "states_covered": ["Maharashtra", "Gujarat (Saurashtra)", "Madhya Pradesh (Malwa & Narmada Valley)", "Northern Karnataka", "Telangana", "Andhra Pradesh"]
+  },
+  "laterite": {
+    "name": "Laterite Soils",
+    "color": "#fbc02d",
+    "sub_type": "High-level Laterite & Low-level (Coastal) Laterite",
+    "geological_origin": "Intense tropical weathering under alternating heavy monsoon rainfall and dry heat; characterized by severe desilication and leaching.",
+    "texture": "Coarse, porous, and vesicular structure; acidic (pH < 6.0); hardens permanently like rock when exposed to air (historically cut into building bricks).",
+    "chemical_profile": "Rich in Iron Oxides and Aluminium; extremely poor in Silica, Nitrogen, Lime, Potash, Magnesia, and Humus (rapidly consumed by bacterial action under heat).",
+    "distinctive_features": "Poor native fertility, but highly suited to intensive commercial plantation crops with systematic manuring.",
+    "major_crops": "Cashew Nut, Tea, Coffee, Rubber, Coconut, Areca Nut, Cardamom",
+    "states_covered": ["Western Ghats crest (Kerala, Karnataka, Goa, Maharashtra)", "Meghalaya (Shillong Plateau)", "Highlands of Odisha and Eastern Ghats", "Chota Nagpur fringes"]
+  },
+  "arid": {
+    "name": "Arid / Desert Soils",
+    "color": "#f5eed7",
+    "sub_type": "Sandy Aridisols & Desert Saline Soils",
+    "geological_origin": "Mechanical disintegration of parent rocks and extensive aeolian (wind-blown) dune deposition under arid climatic regimes.",
+    "texture": "Sandy to gravelly, loose, and highly permeable; virtually zero capillary retention.",
+    "chemical_profile": "High concentrations of soluble salts and Phosphates; extremely deficient in Nitrogen and Organic Humus. Lower soil horizons feature high Calcium carbonate (Kankar layers) that restrict water infiltration.",
+    "distinctive_features": "Can become remarkably productive with targeted canal irrigation (as demonstrated in the Ganganagar & Bikaner tracts along the Indira Gandhi Canal).",
+    "major_crops": "Drought-resistant crops: Bajra, Jowar, Guar, Pulses, Mustard, Barley, Cotton (irrigated)",
+    "states_covered": ["Western Rajasthan (Thar Desert)", "Southern Haryana", "Southwest Punjab", "Rann of Kutch (Gujarat)"]
+  }
+}
