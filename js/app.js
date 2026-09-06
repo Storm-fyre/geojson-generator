@@ -1,5 +1,5 @@
 /**
- * Master Application Controller - IndicAtlas GeoJSON Generator
+ * Master Application Controller - Truly Universal Thematic Engine
  */
 import { MapViewport } from './canvas.js';
 import { GeoTransform } from './transform.js';
@@ -11,8 +11,13 @@ import { GeoJsonExporter } from './geojsonExporter.js';
 class AppController {
   constructor() {
     this.transform = new GeoTransform();
-    this.soilProperties = {};
-    this.activeSoilKey = null;
+    this.thematicMetadata = {};
+    this.legendKeys = [];
+    this.themeName = "thematic_map";
+    
+    this.isRapidSampling = false;
+    this.rapidSampleIndex = 0;
+
     this.extractedFeatures = [];
     this.previewLayers = [];
     this.indiaGeojson = null;
@@ -20,40 +25,35 @@ class AppController {
     this.initElements();
     this.initCanvas();
     this.bindUiEvents();
-    this.loadDefaultSoilProperties();
     this.loadIndiaReference();
+    this.loadDefaultTheme();
   }
 
   initElements() {
     this.workbench = document.getElementById('workbench');
     this.btnToggleSidebar = document.getElementById('btnToggleSidebar');
     this.imageInput = document.getElementById('imageInput');
-    this.soilMetaInput = document.getElementById('soilMetaInput');
+    this.metaInput = document.getElementById('metaInput');
     this.btnExport = document.getElementById('btnExport');
-    this.btnPickColor = document.getElementById('btnPickColor');
+    this.btnRapidSample = document.getElementById('btnRapidSample');
     this.btnGeneratePreview = document.getElementById('btnGeneratePreview');
-    this.soilSelect = document.getElementById('soilSelect');
-    this.activeColorInput = document.getElementById('activeColorInput');
-    this.activeColorHex = document.getElementById('activeColorHex');
-    this.colorTolerance = document.getElementById('colorTolerance');
-    this.tolVal = document.getElementById('tolVal');
-    this.overlayOpacity = document.getElementById('overlayOpacity');
-    this.morphClosing = document.getElementById('morphClosing');
-    this.minArea = document.getElementById('minArea');
-    this.simplifyTol = document.getElementById('simplifyTol');
-    this.soilChipsList = document.getElementById('soilChipsList');
+    this.legendCardsContainer = document.getElementById('legendCardsContainer');
     this.statusMessage = document.getElementById('statusMessage');
 
     this.btnModeBox = document.getElementById('btnModeBox');
     this.btnModePins = document.getElementById('btnModePins');
     this.boxControls = document.getElementById('boxControls');
     this.pinControls = document.getElementById('pinControls');
-    this.boxScaleSlider = document.getElementById('boxScaleSlider');
-    this.boxScaleVal = document.getElementById('boxScaleVal');
 
-    if (this.minArea) {
-      this.minArea.value = 15;
-    }
+    // Advanced tuning controls
+    this.colorTolerance = document.getElementById('colorTolerance');
+    this.tolVal = document.getElementById('tolVal');
+    this.morphClosing = document.getElementById('morphClosing');
+    this.morphVal = document.getElementById('morphVal');
+    this.minArea = document.getElementById('minArea');
+    this.simplifyTol = document.getElementById('simplifyTol');
+    this.simplifyVal = document.getElementById('simplifyVal');
+    this.overlayOpacity = document.getElementById('overlayOpacity');
   }
 
   initCanvas() {
@@ -71,65 +71,111 @@ class AppController {
       if (response.ok) {
         this.indiaGeojson = await response.json();
         this.viewport.setReferenceGeojson(this.indiaGeojson, this.transform);
-        this.statusMessage.textContent = "India boundary reference loaded. Position box over map.";
+        this.statusMessage.textContent = "India reference loaded. Load your map image to begin.";
       }
     } catch (e) {
-      console.warn("Could not fetch data/india.geojson automatically.", e);
+      console.warn("Could not load reference data/india.geojson", e);
     }
   }
 
-  loadDefaultSoilProperties() {
-    this.soilProperties = {
-      forest_mountain: { name: "Forest & Mountain Soils", color: "#2e7d32" },
-      alluvial: { name: "Alluvial Soils", color: "#a1d971" },
-      red_yellow: { name: "Red and Yellow Soils", color: "#e53935" },
-      black: { name: "Black Soils (Regur)", color: "#424242" },
-      laterite: { name: "Laterite Soils", color: "#fbc02d" },
-      arid: { name: "Arid / Desert Soils", color: "#f5eed7" }
-    };
-    this.populateSoilSelectors();
+  async loadDefaultTheme() {
+    try {
+      const res = await fetch('data/soil_properties.json');
+      if (res.ok) {
+        const data = await res.json();
+        this.themeName = "soils";
+        this.parseLegendData(data);
+      }
+    } catch (e) {
+      console.log("No default soil_properties.json found. Ready for custom JSON.");
+    }
   }
 
-  populateSoilSelectors() {
-    this.soilSelect.innerHTML = '';
-    this.soilChipsList.innerHTML = '';
+  /**
+   * Universal parser for any thematic JSON:
+   * Supports dictionaries { key: { name: "...", color: "...", ... } }
+   * or arrays of objects [ { key: "...", name: "...", ... } ]
+   */
+  parseLegendData(data) {
+    this.thematicMetadata = {};
+    this.legendKeys = [];
 
-    const keys = Object.keys(this.soilProperties);
-    keys.forEach((key, idx) => {
-      const soil = this.soilProperties[key];
+    if (Array.isArray(data)) {
+      data.forEach((item, idx) => {
+        const key = item.key || item.id || `class_${idx + 1}`;
+        this.thematicMetadata[key] = {
+          name: item.name || item.title || key,
+          color: item.color || "#424242",
+          ...item
+        };
+        this.legendKeys.push(key);
+      });
+    } else if (typeof data === 'object' && data !== null) {
+      for (const key in data) {
+        if (key.startsWith('_')) continue; // skip metadata like _theme_name
+        const val = data[key];
+        if (typeof val === 'object' && val !== null) {
+          this.thematicMetadata[key] = {
+            name: val.name || val.title || key,
+            color: val.color || "#424242",
+            ...val
+          };
+        } else {
+          this.thematicMetadata[key] = {
+            name: String(val),
+            color: "#424242"
+          };
+        }
+        this.legendKeys.push(key);
+      }
+      if (data._theme_name) {
+        this.themeName = data._theme_name;
+      }
+    }
 
-      const option = document.createElement('option');
-      option.value = key;
-      option.textContent = soil.name;
-      this.soilSelect.appendChild(option);
+    this.renderLegendCards();
+    this.btnRapidSample.disabled = this.legendKeys.length === 0 || !this.viewport.image;
+    this.btnExport.textContent = `💾 Export ${this.themeName}.geojson`;
+  }
 
-      const chip = document.createElement('div');
-      chip.className = `soil-chip ${idx === 0 ? 'active' : ''}`;
-      chip.dataset.key = key;
-      chip.innerHTML = `
-        <span class="chip-dot" style="background-color: ${soil.color}"></span>
-        <span>${soil.name}</span>
+  renderLegendCards() {
+    this.legendCardsContainer.innerHTML = '';
+    if (this.legendKeys.length === 0) {
+      this.legendCardsContainer.innerHTML = '<p class="muted empty-legend-notice">Load a JSON file to populate legend classes.</p>';
+      return;
+    }
+
+    this.legendKeys.forEach((key, index) => {
+      const item = this.thematicMetadata[key];
+
+      const card = document.createElement('div');
+      card.className = 'legend-card';
+      card.id = `legend-card-${key}`;
+      card.dataset.key = key;
+      card.dataset.index = index;
+
+      card.innerHTML = `
+        <div class="legend-card-left">
+          <span class="legend-card-title" title="${item.name}">${index + 1}. ${item.name}</span>
+        </div>
+        <div class="legend-card-right">
+          <input type="color" class="swatch-picker" id="swatch-${key}" value="${item.color}">
+        </div>
       `;
-      chip.addEventListener('click', () => this.selectActiveSoil(key));
-      this.soilChipsList.appendChild(chip);
-    });
 
-    if (keys.length > 0) {
-      this.selectActiveSoil(keys[0]);
-    }
-  }
+      // Manual color swatch change
+      const picker = card.querySelector(`#swatch-${key}`);
+      picker.addEventListener('input', (e) => {
+        item.color = e.target.value;
+      });
 
-  selectActiveSoil(key) {
-    this.activeSoilKey = key;
-    this.soilSelect.value = key;
-    const soil = this.soilProperties[key];
-    if (soil && soil.color) {
-      this.activeColorInput.value = soil.color;
-      this.activeColorHex.textContent = soil.color.toUpperCase();
-    }
+      // Clicking card allows single-class eyedropper
+      card.addEventListener('click', (e) => {
+        if (e.target.tagName.toLowerCase() === 'input') return;
+        this.startSingleSample(key);
+      });
 
-    document.querySelectorAll('.soil-chip').forEach(chip => {
-      chip.classList.toggle('active', chip.dataset.key === key);
+      this.legendCardsContainer.appendChild(card);
     });
   }
 
@@ -141,13 +187,14 @@ class AppController {
       });
     }
 
+    // Step 1 Modes
     this.btnModeBox.addEventListener('click', () => {
       this.btnModeBox.classList.add('active');
       this.btnModePins.classList.remove('active');
       this.boxControls.style.display = 'block';
       this.pinControls.style.display = 'none';
       this.viewport.setCalibrationMode('box');
-      this.statusMessage.textContent = "Box mode: Drag to move, drag corner handle to scale.";
+      this.statusMessage.textContent = "Box mode: Drag to move; drag bottom-right corner to scale.";
     });
 
     this.btnModePins.addEventListener('click', () => {
@@ -156,15 +203,10 @@ class AppController {
       this.boxControls.style.display = 'none';
       this.pinControls.style.display = 'block';
       this.viewport.setCalibrationMode('pins');
-      this.statusMessage.textContent = "7-Point TPS mode: Nudge individual boundary pins.";
+      this.statusMessage.textContent = "7-Point TPS mode: Drag pins to match coastline and border vertices.";
     });
 
-    this.boxScaleSlider.addEventListener('input', (e) => {
-      const val = e.target.value;
-      this.boxScaleVal.textContent = `${val}%`;
-      this.viewport.setBoxScalePercent(parseInt(val, 10));
-    });
-
+    // Image Input
     this.imageInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -173,22 +215,27 @@ class AppController {
         this.viewport.loadImage(evt.target.result).then(() => {
           this.transform.calibrate(this.viewport.pins);
           this.viewport.updateTransform(this.transform);
+          this.btnRapidSample.disabled = this.legendKeys.length === 0;
           this.btnGeneratePreview.disabled = false;
-          this.statusMessage.textContent = "Image loaded. Move & scale the box to fit.";
+          this.statusMessage.textContent = "Image loaded. Calibrate box, then sample legend colors.";
         });
       };
       reader.readAsDataURL(file);
     });
 
-    this.soilMetaInput.addEventListener('change', (e) => {
+    // Legend JSON Input
+    this.metaInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
+      const baseName = file.name.replace(/\.[^/.]+$/, "");
+      this.themeName = baseName;
+
       const reader = new FileReader();
       reader.onload = (evt) => {
         try {
-          this.soilProperties = JSON.parse(evt.target.result);
-          this.populateSoilSelectors();
-          this.statusMessage.textContent = "Custom metadata loaded successfully.";
+          const parsed = JSON.parse(evt.target.result);
+          this.parseLegendData(parsed);
+          this.statusMessage.textContent = `Loaded ${this.legendKeys.length} legend classes from ${file.name}.`;
         } catch (err) {
           alert("Invalid JSON format.");
         }
@@ -201,78 +248,140 @@ class AppController {
       this.viewport.updateTransform(this.transform);
     };
 
-    this.btnPickColor.addEventListener('click', () => {
-      if (this.viewport.mode === 'eyedropper') {
-        this.viewport.mode = 'navigate';
-        this.btnPickColor.textContent = '🎯 Pick from Canvas';
-        this.statusMessage.textContent = 'Navigation mode: Zoom & Pan active.';
+    // Sequential Rapid Eyedropper Trigger
+    this.btnRapidSample.addEventListener('click', () => {
+      if (this.isRapidSampling) {
+        this.stopRapidSampling();
       } else {
-        this.viewport.mode = 'eyedropper';
-        this.btnPickColor.textContent = '❌ Cancel Eyedropper';
-        this.statusMessage.textContent = 'Click on any class region in the map to sample.';
+        this.startRapidSampling();
       }
     });
 
-    this.onColorSampled = (x, y) => {
-      const offCanvas = document.createElement('canvas');
-      offCanvas.width = this.viewport.image.naturalWidth;
-      offCanvas.height = this.viewport.image.naturalHeight;
-      const offCtx = offCanvas.getContext('2d');
-      offCtx.drawImage(this.viewport.image, 0, 0);
-
-      const pixel = offCtx.getImageData(x, y, 1, 1).data;
-      const hex = `#${((1 << 24) + (pixel[0] << 16) + (pixel[1] << 8) + pixel[2]).toString(16).slice(1)}`;
-
-      this.activeColorInput.value = hex;
-      this.activeColorHex.textContent = hex.toUpperCase();
-
-      if (this.activeSoilKey && this.soilProperties[this.activeSoilKey]) {
-        this.soilProperties[this.activeSoilKey].color = hex;
-        const activeChipDot = document.querySelector(`.soil-chip[data-key="${this.activeSoilKey}"] .chip-dot`);
-        if (activeChipDot) activeChipDot.style.backgroundColor = hex;
-      }
-
-      this.viewport.mode = 'navigate';
-      this.btnPickColor.textContent = '🎯 Pick from Canvas';
-      this.statusMessage.textContent = `Sampled color: ${hex.toUpperCase()}`;
-    };
-
-    this.soilSelect.addEventListener('change', (e) => this.selectActiveSoil(e.target.value));
-
-    this.activeColorInput.addEventListener('input', (e) => {
-      const hex = e.target.value;
-      this.activeColorHex.textContent = hex.toUpperCase();
-      if (this.activeSoilKey && this.soilProperties[this.activeSoilKey]) {
-        this.soilProperties[this.activeSoilKey].color = hex;
-      }
-    });
-
-    this.colorTolerance.addEventListener('input', (e) => {
-      this.tolVal.textContent = e.target.value;
-    });
+    // Navigation & Overlay controls
+    document.getElementById('btnZoomIn').addEventListener('click', () => this.viewport.zoom(1.2));
+    document.getElementById('btnZoomOut').addEventListener('click', () => this.viewport.zoom(0.8));
+    document.getElementById('btnResetView').addEventListener('click', () => this.viewport.fitToScreen());
 
     this.overlayOpacity.addEventListener('input', (e) => {
       this.viewport.overlayOpacity = parseFloat(e.target.value);
       this.viewport.render();
     });
 
-    document.getElementById('btnZoomIn').addEventListener('click', () => this.viewport.zoom(1.2));
-    document.getElementById('btnZoomOut').addEventListener('click', () => this.viewport.zoom(0.8));
-    document.getElementById('btnResetView').addEventListener('click', () => this.viewport.fitToScreen());
+    // Advanced Sliders Value Labels
+    this.colorTolerance.addEventListener('input', (e) => this.tolVal.textContent = e.target.value);
+    this.morphClosing.addEventListener('input', (e) => this.morphVal.textContent = `${e.target.value}px`);
+    this.simplifyTol.addEventListener('input', (e) => this.simplifyVal.textContent = parseFloat(e.target.value).toFixed(1));
 
+    // Extraction & Export
     this.btnGeneratePreview.addEventListener('click', () => this.processAllLayers());
 
     this.btnExport.addEventListener('click', () => {
       if (this.extractedFeatures.length === 0) return;
-      const finalGeoJson = GeoJsonExporter.buildFeatureCollection(this.extractedFeatures);
-      GeoJsonExporter.downloadJson(finalGeoJson, "soils.geojson");
+      const finalGeoJson = GeoJsonExporter.buildFeatureCollection(this.extractedFeatures, this.themeName);
+      GeoJsonExporter.downloadJson(finalGeoJson, `${this.themeName}.geojson`);
     });
   }
 
-  /**
-   * Solid vector mask from calibrated reference boundary.
-   * 1 strictly inside country, 0 in ocean/margins.
-   */
+  /* -------------------------------------------------------------
+     Sequential Auto-Advancing Color Sampler Engine
+     ------------------------------------------------------------- */
+  startRapidSampling() {
+    if (!this.viewport.image || this.legendKeys.length === 0) return;
+
+    this.isRapidSampling = true;
+    this.rapidSampleIndex = 0;
+    this.viewport.mode = 'eyedropper';
+
+    this.btnRapidSample.textContent = '❌ Cancel Rapid Sampling';
+    this.btnRapidSample.classList.add('sampling-active');
+    this.statusMessage.classList.add('sampling-target');
+
+    this.promptNextRapidSample();
+  }
+
+  stopRapidSampling() {
+    this.isRapidSampling = false;
+    this.viewport.mode = 'navigate';
+
+    this.btnRapidSample.textContent = '⚡ Rapid-Sample All Colors';
+    this.btnRapidSample.classList.remove('sampling-active');
+    this.statusMessage.classList.remove('sampling-target');
+
+    document.querySelectorAll('.legend-card').forEach(c => c.classList.remove('sampling-target'));
+    this.statusMessage.textContent = "Color sampling finished. Ready to trace & preview.";
+  }
+
+  promptNextRapidSample() {
+    if (this.rapidSampleIndex >= this.legendKeys.length) {
+      this.stopRapidSampling();
+      this.statusMessage.textContent = "✅ All legend colors captured! Ready to Trace & Preview.";
+      return;
+    }
+
+    const currentKey = this.legendKeys[this.rapidSampleIndex];
+    const currentItem = this.thematicMetadata[currentKey];
+
+    // Highlight card
+    document.querySelectorAll('.legend-card').forEach(c => c.classList.remove('sampling-target'));
+    const targetCard = document.getElementById(`legend-card-${currentKey}`);
+    if (targetCard) {
+      targetCard.classList.add('sampling-target');
+      targetCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // Dynamic prompt banner
+    this.statusMessage.textContent = `🎯 Tap map for: "${currentItem.name}" (${this.rapidSampleIndex + 1}/${this.legendKeys.length})`;
+  }
+
+  startSingleSample(key) {
+    if (this.isRapidSampling) return;
+    this.singleSampleKey = key;
+    this.viewport.mode = 'eyedropper';
+    const item = this.thematicMetadata[key];
+
+    document.querySelectorAll('.legend-card').forEach(c => c.classList.remove('sampling-target'));
+    const targetCard = document.getElementById(`legend-card-${key}`);
+    if (targetCard) targetCard.classList.add('sampling-target');
+
+    this.statusMessage.classList.add('sampling-target');
+    this.statusMessage.textContent = `🎯 Tap map for: "${item.name}"`;
+  }
+
+  onColorSampled(x, y) {
+    const offCanvas = document.createElement('canvas');
+    offCanvas.width = this.viewport.image.naturalWidth;
+    offCanvas.height = this.viewport.image.naturalHeight;
+    const offCtx = offCanvas.getContext('2d');
+    offCtx.drawImage(this.viewport.image, 0, 0);
+
+    const pixel = offCtx.getImageData(x, y, 1, 1).data;
+    const hex = `#${((1 << 24) + (pixel[0] << 16) + (pixel[1] << 8) + pixel[2]).toString(16).slice(1)}`;
+
+    if (this.isRapidSampling) {
+      const currentKey = this.legendKeys[this.rapidSampleIndex];
+      this.thematicMetadata[currentKey].color = hex;
+
+      const swatch = document.getElementById(`swatch-${currentKey}`);
+      if (swatch) swatch.value = hex;
+
+      this.rapidSampleIndex++;
+      this.promptNextRapidSample();
+    } else if (this.singleSampleKey) {
+      this.thematicMetadata[this.singleSampleKey].color = hex;
+      const swatch = document.getElementById(`swatch-${this.singleSampleKey}`);
+      if (swatch) swatch.value = hex;
+
+      this.singleSampleKey = null;
+      this.viewport.mode = 'navigate';
+      this.statusMessage.classList.remove('sampling-target');
+      document.querySelectorAll('.legend-card').forEach(c => c.classList.remove('sampling-target'));
+      this.statusMessage.textContent = `Color updated: ${hex.toUpperCase()}`;
+    }
+  }
+
+  /* -------------------------------------------------------------
+     Airtight Landmask & Thematic Vectorization Pipeline
+     ------------------------------------------------------------- */
   createLandMask(width, height) {
     const canvas = document.createElement('canvas');
     canvas.width = width;
@@ -326,8 +435,8 @@ class AppController {
   }
 
   processAllLayers() {
-    if (!this.viewport.image) return;
-    this.statusMessage.textContent = "Locking boundaries, healing seams... Please wait.";
+    if (!this.viewport.image || this.legendKeys.length === 0) return;
+    this.statusMessage.textContent = "Locking boundaries & healing seams... Please wait.";
 
     const img = this.viewport.image;
     const w = img.naturalWidth;
@@ -345,28 +454,23 @@ class AppController {
     const minArea = parseInt(this.minArea.value, 10);
     const simplifyTol = parseFloat(this.simplifyTol.value);
 
-    // 1. Airtight Vector Landmask (1 = country interior, 0 = ocean & outside margins)
+    // 1. Airtight Land Mask (1 = Country interior, 0 = Outside margin/ocean)
     const landMask = this.createLandMask(w, h);
 
-    // 2. Identify boundary lines, state borders, and their anti-aliased edge halos (dilated by 2px)
+    // 2. Identify Boundary Lines & dilate by 2px to eliminate anti-aliased edge ink
     const lineMask = ColorExtractor.extractLineStrokeMask(imgData, 150, 2);
 
-    // 3. Build Unified Labeled Grid:
-    // Soil colors seed ONLY inside genuine interior land and cannot claim boundary lines or white paper
+    // 3. Unified Labeled Grid
     const labeledGrid = new Uint8Array(w * h);
-    const soilKeys = Object.keys(this.soilProperties);
 
-    soilKeys.forEach((key, index) => {
-      const soilId = index + 1;
-      const meta = this.soilProperties[key];
+    this.legendKeys.forEach((key, index) => {
+      const classId = index + 1;
+      const meta = this.thematicMetadata[key];
       if (!meta.color) return;
 
-      const isBlackSoil = (key === 'black' || meta.color.toLowerCase() === '#424242');
+      const isAchromatic = (key.toLowerCase().includes('black') || meta.color.toLowerCase() === '#424242');
 
-      // Extract raw color match with strict black soil discrimination
-      let mask = ColorExtractor.extractColorMask(imgData, meta.color, tolerance, isBlackSoil);
-
-      // Morphological OPENING cleans out any single-pixel noise and border line anti-aliasing fringes
+      let mask = ColorExtractor.extractColorMask(imgData, meta.color, tolerance, isAchromatic);
       mask = Morphology.open(mask, w, h, 3);
       if (kernelSize > 1) {
         mask = Morphology.close(mask, w, h, kernelSize);
@@ -375,31 +479,30 @@ class AppController {
       for (let i = 0; i < mask.length; i++) {
         if (mask[i] === 1 && landMask[i] === 1 && lineMask[i] === 0) {
           if (labeledGrid[i] === 0) {
-            labeledGrid[i] = soilId;
+            labeledGrid[i] = classId;
           }
         }
       }
     });
 
-    // 4. One-Way Inside-Out Seam Healing:
-    // Legitimate interior soils expand outward through border lines up to the exact vector boundary
+    // 4. Seam Healing: Expand internal legitimate soils outward across gaps
     const healedGrid = Morphology.healSeams(labeledGrid, landMask, w, h);
 
-    // 5. Trace and smooth contours for each soil type
+    // 5. Trace & Smooth Contours
     const interimLayers = [];
-    soilKeys.forEach((key, index) => {
-      const soilId = index + 1;
-      const meta = this.soilProperties[key];
+    this.legendKeys.forEach((key, index) => {
+      const classId = index + 1;
+      const meta = this.thematicMetadata[key];
       if (!meta.color) return;
 
-      const soilMask = new Uint8Array(w * h);
+      const classMask = new Uint8Array(w * h);
       for (let i = 0; i < healedGrid.length; i++) {
-        if (healedGrid[i] === soilId) {
-          soilMask[i] = 1;
+        if (healedGrid[i] === classId) {
+          classMask[i] = 1;
         }
       }
 
-      const rawContours = Vectorizer.traceContours(soilMask, w, h, minArea);
+      const rawContours = Vectorizer.traceContours(classMask, w, h, minArea);
       const simplifiedRings = rawContours.map(ring => Vectorizer.simplify(ring, simplifyTol));
 
       if (simplifiedRings.length > 0) {
@@ -412,10 +515,10 @@ class AppController {
       }
     });
 
-    // 6. Topological Shared-Edge Vertex Snapping
+    // 6. Snapping
     Vectorizer.snapSharedVertices(interimLayers, 1.6);
 
-    // 7. Assemble finalized GeoJSON Features
+    // 7. Assemble GeoJSON Features
     this.extractedFeatures = [];
     this.previewLayers = [];
 
@@ -425,7 +528,7 @@ class AppController {
         rings: item.rings
       });
 
-      const feature = GeoJsonExporter.createSoilFeature(item.key, item.meta, item.rings, this.transform);
+      const feature = GeoJsonExporter.createThematicFeature(item.key, item.meta, item.rings, this.transform);
       if (feature) {
         this.extractedFeatures.push(feature);
       }
@@ -433,7 +536,7 @@ class AppController {
 
     this.viewport.setVectorPreview(this.previewLayers);
     this.btnExport.disabled = this.extractedFeatures.length === 0;
-    this.statusMessage.textContent = `Done! Extracted ${this.extractedFeatures.length} classes. Boundaries locked.`;
+    this.statusMessage.textContent = `Extracted ${this.extractedFeatures.length} classes. Ready to export.`;
   }
 }
 

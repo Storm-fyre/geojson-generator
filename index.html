@@ -3,45 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Thematic Map to GeoJSON Generator</title>
+  <title>IndicAtlas Thematic GeoJSON Generator</title>
   <link rel="stylesheet" href="css/style.css">
-  <style>
-    .mode-toggle-group {
-      display: flex;
-      gap: 0.4rem;
-      background: var(--bg-primary);
-      padding: 0.25rem;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      margin-bottom: 0.75rem;
-    }
-    .mode-btn {
-      flex: 1;
-      padding: 0.4rem 0.2rem;
-      font-size: 0.72rem;
-      font-weight: 600;
-      border: none;
-      background: transparent;
-      color: var(--text-muted);
-      border-radius: 4px;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-    .mode-btn.active {
-      background: var(--accent);
-      color: #fff;
-    }
-    .box-instructions {
-      background: rgba(59, 130, 246, 0.1);
-      border: 1px dashed rgba(59, 130, 246, 0.4);
-      padding: 0.5rem;
-      border-radius: 6px;
-      font-size: 0.72rem;
-      color: #93c5fd;
-      margin-bottom: 0.6rem;
-      line-height: 1.3;
-    }
-  </style>
 </head>
 <body>
   <header class="app-header">
@@ -55,12 +18,12 @@
       </label>
       <input type="file" id="imageInput" accept="image/png, image/jpeg, image/webp" hidden>
       
-      <label class="btn btn-secondary file-label" for="soilMetaInput">
-        📄 Load Soil Properties
+      <label class="btn btn-secondary file-label" for="metaInput">
+        📄 Load Legend JSON
       </label>
-      <input type="file" id="soilMetaInput" accept="application/json" hidden>
+      <input type="file" id="metaInput" accept="application/json" hidden>
 
-      <button id="btnExport" class="btn btn-primary" disabled>💾 Export soils.geojson</button>
+      <button id="btnExport" class="btn btn-primary" disabled>💾 Export GeoJSON</button>
     </div>
   </header>
 
@@ -81,17 +44,18 @@
         <span>▶</span>
       </button>
 
+      <!-- Dynamic Status & Sampler Hint Banner -->
       <div class="toast-hint" id="statusMessage">
-        Upload a map image to begin calibration.
+        Upload a map image and load a Legend JSON to begin.
       </div>
     </div>
 
-    <!-- Collapsible Tools Sidebar -->
+    <!-- Tools Sidebar -->
     <aside class="sidebar" id="sidebar">
-      <!-- Step 1: 7-Point Calibration -->
+      <!-- Step 1: Calibration -->
       <section class="panel-section">
         <div class="section-title-row">
-          <h3>1. 7-Point TPS Calibration</h3>
+          <h3>1. Coordinate Calibration</h3>
         </div>
         
         <div class="mode-toggle-group">
@@ -105,105 +69,77 @@
 
         <div id="boxControls">
           <div class="box-instructions">
-            <strong>Box Mode active:</strong> Move or scale the box to fit India generally. Toggle to <strong>Fine-tune 7 Pins</strong> for local rubber-sheeting.
-          </div>
-          <div class="control-row">
-            <label>Shape Scale: <span id="boxScaleVal">100%</span></label>
-            <input type="range" id="boxScaleSlider" min="30" max="250" value="100">
+            Drag inside the box to move it over India. Drag the bottom-right cyan handle directly on canvas to scale.
           </div>
         </div>
 
         <div id="pinControls" style="display: none;">
-          <p class="muted">Thin Plate Spline active. Nudge pins independently:</p>
+          <p class="muted">Thin Plate Spline active. Nudge boundary pins independently:</p>
           <div class="pin-status-list">
-            <div class="pin-row" data-pin="north">
-              <span class="pin-badge pin-north">N</span>
-              <span>North (Kashmir / Siachen)</span>
-            </div>
-            <div class="pin-row" data-pin="south">
-              <span class="pin-badge pin-south">S</span>
-              <span>South (Kanyakumari)</span>
-            </div>
-            <div class="pin-row" data-pin="west">
-              <span class="pin-badge pin-west">W</span>
-              <span>West (Gujarat Tip)</span>
-            </div>
-            <div class="pin-row" data-pin="east">
-              <span class="pin-badge pin-east">E</span>
-              <span>East (Arunachal Tip)</span>
-            </div>
-            <div class="pin-row" data-pin="mizo">
-              <span class="pin-badge pin-mizo">MZ</span>
-              <span>Mizoram (Southern Tip)</span>
-            </div>
-            <div class="pin-row" data-pin="raj">
-              <span class="pin-badge pin-raj">RJ</span>
-              <span>Rajasthan (Panhandle Apex)</span>
-            </div>
-            <div class="pin-row" data-pin="chil">
-              <span class="pin-badge pin-chil">CH</span>
-              <span>Chilika Lake (NE Spit)</span>
-            </div>
+            <div class="pin-row" data-pin="north"><span class="pin-badge pin-north">N</span><span>North (Kashmir / Siachen)</span></div>
+            <div class="pin-row" data-pin="south"><span class="pin-badge pin-south">S</span><span>South (Kanyakumari)</span></div>
+            <div class="pin-row" data-pin="west"><span class="pin-badge pin-west">W</span><span>West (Gujarat Tip)</span></div>
+            <div class="pin-row" data-pin="east"><span class="pin-badge pin-east">E</span><span>East (Arunachal Tip)</span></div>
+            <div class="pin-row" data-pin="mizo"><span class="pin-badge pin-mizo">MZ</span><span>Mizoram (Southern Tip)</span></div>
+            <div class="pin-row" data-pin="raj"><span class="pin-badge pin-raj">RJ</span><span>Rajasthan (Panhandle Apex)</span></div>
+            <div class="pin-row" data-pin="chil"><span class="pin-badge pin-chil">CH</span><span>Chilika Lake (NE Spit)</span></div>
           </div>
-        </div>
-
-        <div class="control-row">
-          <label>Overlay Opacity:</label>
-          <input type="range" id="overlayOpacity" min="0.05" max="1" step="0.05" value="0.45">
         </div>
       </section>
 
-      <!-- Step 2: Soil Classes -->
+      <!-- Step 2: Thematic Legend & Rapid Eyedropper -->
       <section class="panel-section">
         <div class="section-title-row">
-          <h3>2. Soil Classes</h3>
-          <button id="btnPickColor" class="btn btn-sm btn-outline">🎯 Pick from Canvas</button>
+          <h3>2. Thematic Classes</h3>
         </div>
 
-        <div class="control-row">
-          <label for="soilSelect">Active Soil Type:</label>
-          <select id="soilSelect"></select>
-        </div>
+        <button id="btnRapidSample" class="btn btn-rapid" disabled>
+          ⚡ Rapid-Sample All Colors
+        </button>
 
-        <div class="control-row">
-          <label>Target Swatch:</label>
-          <div class="color-preview-box">
-            <input type="color" id="activeColorInput" value="#424242">
-            <span id="activeColorHex" class="code-badge">#424242</span>
-          </div>
+        <div class="legend-cards-container" id="legendCardsContainer">
+          <p class="muted empty-legend-notice">Load a JSON file to populate legend classes.</p>
         </div>
-
-        <div class="control-row">
-          <label>Color Tolerance: <span id="tolVal">15</span></label>
-          <input type="range" id="colorTolerance" min="5" max="100" value="15">
-        </div>
-
-        <div class="soil-chips-list" id="soilChipsList"></div>
       </section>
 
-      <!-- Step 3: Vectorization & Cleanup -->
+      <!-- Step 3: Vectorization -->
       <section class="panel-section">
         <h3>3. Polygon Extraction</h3>
-        
-        <div class="control-row">
-          <label>Filter Thin Lines (State/Rivers):</label>
-          <input type="range" id="morphClosing" min="1" max="9" step="2" value="3">
-        </div>
-
-        <div class="control-row">
-          <label>Min Polygon Area (px):</label>
-          <input type="number" id="minArea" value="15" min="5" max="5000">
-        </div>
-
-        <div class="control-row">
-          <label>Boundary Smoothing (Tolerance):</label>
-          <input type="range" id="simplifyTol" min="0.5" max="5.0" step="0.5" value="1.0">
-        </div>
-
         <button id="btnGeneratePreview" class="btn btn-action" disabled>
           ⚡ Trace & Preview GeoJSON
         </button>
       </section>
+
+      <!-- Folded Advanced Quality Tuning Accordion -->
+      <details class="advanced-accordion">
+        <summary>⚙️ Advanced Quality Tuning</summary>
+        <div class="accordion-content">
+          <div class="control-row">
+            <label>Color Tolerance: <span id="tolVal">15</span></label>
+            <input type="range" id="colorTolerance" min="5" max="100" value="15">
+          </div>
+
+          <div class="control-row">
+            <label>Filter Thin Lines (State/Rivers): <span id="morphVal">3px</span></label>
+            <input type="range" id="morphClosing" min="1" max="9" step="2" value="3">
+          </div>
+
+          <div class="control-row">
+            <label>Min Polygon Area (px):</label>
+            <input type="number" id="minArea" value="15" min="5" max="5000">
+          </div>
+
+          <div class="control-row">
+            <label>Boundary Smoothing: <span id="simplifyVal">1.0</span></label>
+            <input type="range" id="simplifyTol" min="0.5" max="5.0" step="0.5" value="1.0">
+          </div>
+
+          <div class="control-row">
+            <label>Overlay Opacity:</label>
+            <input type="range" id="overlayOpacity" min="0.05" max="1" step="0.05" value="0.45">
+          </div>
+        </div>
+      </details>
     </aside>
   </main>
 
