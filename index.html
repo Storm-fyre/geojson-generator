@@ -104,15 +104,20 @@
 
       <!-- Step 3: Vectorization -->
       <section class="panel-section">
-        <h3>3. Polygon Extraction</h3>
+        <div class="section-title-row">
+          <h3>3. Polygon Extraction</h3>
+        </div>
         <button id="btnGeneratePreview" class="btn btn-action" disabled>
           ⚡ Trace & Preview GeoJSON
         </button>
       </section>
 
-      <!-- Folded Advanced Quality Tuning Accordion -->
-      <details class="advanced-accordion">
-        <summary>⚙️ Advanced Quality Tuning</summary>
+      <!-- Step 4: Visible Advanced Quality Tuning Card -->
+      <details class="panel-section advanced-accordion" id="advancedAccordion">
+        <summary class="advanced-summary">
+          <span class="advanced-title">⚙️ Advanced Quality Tuning</span>
+          <span class="accordion-arrow">▼</span>
+        </summary>
         <div class="accordion-content">
           <div class="control-row">
             <label>Color Tolerance: <span id="tolVal">15</span></label>
@@ -126,7 +131,7 @@
 
           <div class="control-row">
             <label>Min Polygon Area (px):</label>
-            <input type="number" id="minArea" value="15" min="5" max="5000">
+            <input type="number" id="minArea" value="15" min="2" max="5000">
           </div>
 
           <div class="control-row">
