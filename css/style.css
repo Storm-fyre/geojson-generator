@@ -27,6 +27,7 @@ body {
   overflow: hidden;
 }
 
+/* Header */
 .app-header {
   height: 54px;
   background-color: var(--bg-secondary);
@@ -55,6 +56,7 @@ body {
   gap: 0.6rem;
 }
 
+/* Buttons */
 .btn {
   padding: 0.45rem 0.85rem;
   font-size: 0.82rem;
@@ -70,12 +72,37 @@ body {
   cursor: not-allowed;
 }
 
-.btn-primary { background-color: var(--accent-success); color: #fff; }
-.btn-primary:hover:not(:disabled) { background-color: #059669; }
-.btn-secondary { background-color: var(--bg-panel); border-color: var(--border); color: var(--text-primary); }
-.btn-secondary:hover:not(:disabled) { background-color: #3b3b4a; }
-.btn-action { background-color: var(--accent); color: #fff; width: 100%; padding: 0.6rem; font-weight: 600; }
-.btn-action:hover:not(:disabled) { background-color: var(--accent-hover); }
+.btn-primary { 
+  background-color: var(--accent-success); 
+  color: #fff; 
+}
+
+.btn-primary:hover:not(:disabled) { 
+  background-color: #059669; 
+}
+
+.btn-secondary { 
+  background-color: var(--bg-panel); 
+  border-color: var(--border); 
+  color: var(--text-primary); 
+}
+
+.btn-secondary:hover:not(:disabled) { 
+  background-color: #3b3b4a; 
+}
+
+.btn-action { 
+  background-color: var(--accent); 
+  color: #fff; 
+  width: 100%; 
+  padding: 0.6rem; 
+  font-weight: 600; 
+}
+
+.btn-action:hover:not(:disabled) { 
+  background-color: var(--accent-hover); 
+}
+
 .btn-rapid {
   background-color: #4f46e5;
   color: #fff;
@@ -84,15 +111,22 @@ body {
   margin-bottom: 0.75rem;
   font-weight: 600;
 }
-.btn-rapid:hover:not(:disabled) { background-color: #4338ca; }
+
+.btn-rapid:hover:not(:disabled) { 
+  background-color: #4338ca; 
+}
+
 .btn-rapid.sampling-active {
   background-color: #dc2626;
   animation: pulse-border 1.5s infinite;
 }
 
-.file-label { display: inline-flex; align-items: center; }
+.file-label { 
+  display: inline-flex; 
+  align-items: center; 
+}
 
-/* Workbench Grid */
+/* Workbench Layout */
 .workbench {
   flex: 1;
   display: grid;
@@ -144,7 +178,10 @@ canvas#mapCanvas {
   cursor: pointer;
   border-radius: 4px;
 }
-.canvas-overlay-controls button:hover { background-color: var(--bg-panel); }
+
+.canvas-overlay-controls button:hover { 
+  background-color: var(--bg-panel); 
+}
 
 .sidebar-toggle-btn {
   position: absolute;
@@ -163,10 +200,17 @@ canvas#mapCanvas {
   z-index: 10;
   transition: all 0.2s ease;
 }
-.sidebar-toggle-btn:hover { background: var(--bg-panel); }
-.workbench.sidebar-collapsed .sidebar-toggle-btn span { transform: rotate(180deg); display: inline-block; }
 
-/* Status Toast Banner */
+.sidebar-toggle-btn:hover { 
+  background: var(--bg-panel); 
+}
+
+.workbench.sidebar-collapsed .sidebar-toggle-btn span { 
+  transform: rotate(180deg); 
+  display: inline-block; 
+}
+
+/* Toast Status Banner */
 .toast-hint {
   position: absolute;
   bottom: 1.25rem;
@@ -194,20 +238,19 @@ canvas#mapCanvas {
   font-size: 0.88rem;
 }
 
-/* Sidebar with Sticky Anti-Squash Layout */
+/* Sidebar */
 .sidebar {
   background-color: var(--bg-secondary);
   border-left: 1px solid var(--border);
   overflow-y: auto;
   overflow-x: hidden;
   padding: 1rem;
-  padding-bottom: 3.5rem; /* Generous bottom buffer so nothing is cut off */
+  padding-bottom: 3.5rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-/* FIX: Prevent browser flexbox from squashing panels down to 0px */
 .sidebar > * {
   flex-shrink: 0;
 }
@@ -312,6 +355,7 @@ canvas#mapCanvas {
   font-size: 0.68rem;
   color: #fff;
 }
+
 .pin-north { background-color: #ef4444; }
 .pin-south { background-color: #10b981; }
 .pin-west  { background-color: #3b82f6; }
@@ -375,8 +419,15 @@ canvas#mapCanvas {
   background: none;
   padding: 0;
 }
-.swatch-picker::-webkit-color-swatch-wrapper { padding: 0; }
-.swatch-picker::-webkit-color-swatch { border: none; border-radius: 3px; }
+
+.swatch-picker::-webkit-color-swatch-wrapper { 
+  padding: 0; 
+}
+
+.swatch-picker::-webkit-color-swatch { 
+  border: none; 
+  border-radius: 3px; 
+}
 
 .legend-card.sampling-target {
   border-color: var(--accent-amber);
@@ -390,7 +441,7 @@ canvas#mapCanvas {
   100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
 }
 
-/* Distinct, Un-Squashable Advanced Accordion */
+/* Quality Tuning Accordion */
 .advanced-accordion {
   cursor: default;
   transition: background 0.15s ease;
@@ -402,7 +453,7 @@ canvas#mapCanvas {
   justify-content: space-between;
   cursor: pointer;
   user-select: none;
-  list-style: none; /* Hide default triangle */
+  list-style: none;
 }
 
 .advanced-summary::-webkit-details-marker {
@@ -456,4 +507,6 @@ input[type="number"] {
   font-size: 0.8rem;
 }
 
-input[type="range"] { accent-color: var(--accent); }
+input[type="range"] { 
+  accent-color: var(--accent); 
+}
