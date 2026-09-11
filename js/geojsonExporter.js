@@ -1,7 +1,7 @@
 /**
  * Universal Thematic GeoJSON Assembler & Serializer
  * Outputs CRS:84 compliant FeatureCollection with each entity on its own line.
- * Injects simplified island vector geometries into designated thematic classes.
+ * Injects simplified island vector geometries into designated thematic classes idempotently.
  */
 
 export class GeoJsonExporter {
@@ -77,11 +77,18 @@ export class GeoJsonExporter {
 
   /**
    * Injects high-precision simplified island vector geometries into the selected classes.
-   * If a class exists, islands are appended to its MultiPolygon coordinates.
-   * If a class is island-only, a new Feature is created.
+   * Uses safe coordinate cloning so multiple exports never create duplicate island shapes.
    */
   static injectIslandsIntoFeatures(features, islandAssignments, islandGeomsMap, thematicMetadata) {
-    const updatedFeatures = [...features];
+    // Deep clone features and their coordinate arrays to ensure 100% idempotent exports
+    const updatedFeatures = features.map(f => ({
+      ...f,
+      geometry: {
+        ...f.geometry,
+        coordinates: [...f.geometry.coordinates]
+      },
+      properties: { ...f.properties }
+    }));
 
     for (const islandKey of ['andaman', 'nicobar', 'lakshadweep']) {
       const targetClassKey = islandAssignments[islandKey];
@@ -93,10 +100,9 @@ export class GeoJsonExporter {
       const existingFeature = updatedFeatures.find(f => f.properties && f.properties.class_key === targetClassKey);
 
       if (existingFeature) {
-        // Append island polygons to existing feature MultiPolygon coordinates
         existingFeature.geometry.coordinates.push(...islandPolys);
       } else {
-        // Create dedicated feature for this class if only present on islands
+        // Create dedicated feature for this class if only present on islands (e.g. Sundaland)
         const meta = thematicMetadata[targetClassKey] || { name: targetClassKey, color: "#7b1fa2" };
         const properties = {
           class_key: targetClassKey,

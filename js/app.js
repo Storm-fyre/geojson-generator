@@ -17,12 +17,16 @@ class AppController {
     
     this.isRapidSampling = false;
     this.rapidSampleIndex = 0;
+    this.singleSampleKey = null;
+
+    // Optional UI-driven Background Barrier Color (prevents bleeding without modifying JSON)
+    this.barrierColor = null;
 
     this.extractedFeatures = [];
     this.previewLayers = [];
     this.indiaGeojson = null;
 
-    // Island geometries pre-extracted from india.geojson
+    // Pre-extracted island geometries from india.geojson
     this.islandGeometries = {
       andaman: [],
       nicobar: [],
@@ -45,12 +49,21 @@ class AppController {
     this.btnGeneratePreview = document.getElementById('btnGeneratePreview');
     this.legendCardsContainer = document.getElementById('legendCardsContainer');
     this.statusMessage = document.getElementById('statusMessage');
+    this.statusText = document.getElementById('statusText');
+    this.btnSkipSample = document.getElementById('btnSkipSample');
 
     this.btnModeBox = document.getElementById('btnModeBox');
     this.btnModePins = document.getElementById('btnModePins');
     this.boxControls = document.getElementById('boxControls');
     this.pinControls = document.getElementById('pinControls');
     this.overlayColorPicker = document.getElementById('overlayColorPicker');
+
+    // UI Background Barrier controls
+    this.btnAddBarrier = document.getElementById('btnAddBarrier');
+    this.barrierCard = document.getElementById('barrierCard');
+    this.swatchBarrier = document.getElementById('swatchBarrier');
+    this.btnEyedropBarrier = document.getElementById('btnEyedropBarrier');
+    this.btnRemoveBarrier = document.getElementById('btnRemoveBarrier');
 
     // Island assignment select dropdowns
     this.islandAndaman = document.getElementById('islandAndaman');
@@ -93,7 +106,7 @@ class AppController {
         this.islandGeometries.nicobar = Vectorizer.extractIslandPolygons(this.indiaGeojson, 'nicobar');
         this.islandGeometries.lakshadweep = Vectorizer.extractIslandPolygons(this.indiaGeojson, 'lakshadweep');
 
-        this.statusMessage.textContent = "Reference loaded. Load your map image and Legend JSON to begin.";
+        this.statusText.textContent = "Reference loaded. Load your map image and Legend JSON to begin.";
       }
     } catch (e) {
       console.warn("Could not load reference data/india.geojson", e);
@@ -166,7 +179,7 @@ class AppController {
           <span class="legend-card-title" title="${item.name}">${index + 1}. ${item.name}</span>
         </div>
         <div class="legend-card-right">
-          <button type="button" class="btn-card-toggle ${item.isIgnored ? 'active-ignore' : ''}" id="toggle-ignore-${key}" title="${item.isIgnored ? 'Excluded from export (Acts as Barrier)' : 'Click to treat as Barrier/Background (excluded from export)'}">
+          <button type="button" class="btn-card-toggle ${item.isIgnored ? 'active-ignore' : ''}" id="toggle-ignore-${key}" title="${item.isIgnored ? 'Excluded from export (Acts as Barrier)' : 'Click to treat as Barrier (excluded from export)'}">
             ${item.isIgnored ? '🛡️ Barrier' : 'Active'}
           </button>
           <input type="color" class="swatch-picker" id="swatch-${key}" value="${item.color}">
@@ -187,7 +200,7 @@ class AppController {
         card.classList.toggle('is-ignored', item.isIgnored);
         btnIgnore.classList.toggle('active-ignore', item.isIgnored);
         btnIgnore.textContent = item.isIgnored ? '🛡️ Barrier' : 'Active';
-        btnIgnore.title = item.isIgnored ? 'Excluded from export (Acts as Barrier)' : 'Click to treat as Barrier/Background (excluded from export)';
+        btnIgnore.title = item.isIgnored ? 'Excluded from export (Acts as Barrier)' : 'Click to treat as Barrier (excluded from export)';
         this.populateIslandDropdowns();
       });
 
@@ -210,7 +223,6 @@ class AppController {
 
       this.legendKeys.forEach(key => {
         const item = this.thematicMetadata[key];
-        // Exclude ignored/barrier classes from island assignment
         if (item.isIgnored) return;
 
         const opt = document.createElement('option');
@@ -235,6 +247,34 @@ class AppController {
       this.viewport.setOverlayColor(e.target.value);
     });
 
+    // UI Background Barrier Controls
+    this.btnAddBarrier.addEventListener('click', () => {
+      this.barrierColor = this.swatchBarrier.value;
+      this.barrierCard.style.display = 'flex';
+      this.btnAddBarrier.style.display = 'none';
+      this.startSingleSample('__barrier__');
+    });
+
+    this.swatchBarrier.addEventListener('input', (e) => {
+      this.barrierColor = e.target.value;
+    });
+
+    this.btnEyedropBarrier.addEventListener('click', () => {
+      this.startSingleSample('__barrier__');
+    });
+
+    this.btnRemoveBarrier.addEventListener('click', () => {
+      this.barrierColor = null;
+      this.barrierCard.style.display = 'none';
+      this.btnAddBarrier.style.display = 'block';
+      if (this.singleSampleKey === '__barrier__') {
+        this.singleSampleKey = null;
+        this.viewport.mode = 'navigate';
+        this.statusMessage.classList.remove('sampling-target');
+        this.statusText.textContent = "Background barrier removed.";
+      }
+    });
+
     // Step 1 Modes
     this.btnModeBox.addEventListener('click', () => {
       this.btnModeBox.classList.add('active');
@@ -242,7 +282,7 @@ class AppController {
       this.boxControls.style.display = 'block';
       this.pinControls.style.display = 'none';
       this.viewport.setCalibrationMode('box');
-      this.statusMessage.textContent = "Box mode: Drag to move; drag bottom-right corner to scale.";
+      this.statusText.textContent = "Box mode: Drag to move; drag bottom-right corner to scale.";
     });
 
     this.btnModePins.addEventListener('click', () => {
@@ -251,7 +291,7 @@ class AppController {
       this.boxControls.style.display = 'none';
       this.pinControls.style.display = 'block';
       this.viewport.setCalibrationMode('pins');
-      this.statusMessage.textContent = "7-Point TPS mode: Drag pins to match coastline and border vertices.";
+      this.statusText.textContent = "7-Point TPS mode: Drag pins to match coastline and border vertices.";
     });
 
     // Image Input
@@ -265,7 +305,7 @@ class AppController {
           this.viewport.updateTransform(this.transform);
           this.btnRapidSample.disabled = this.legendKeys.length === 0;
           this.btnGeneratePreview.disabled = false;
-          this.statusMessage.textContent = "Image loaded. Calibrate box, then sample legend colors.";
+          this.statusText.textContent = "Image loaded. Calibrate box, then sample legend colors.";
         });
       };
       reader.readAsDataURL(file);
@@ -283,7 +323,7 @@ class AppController {
         try {
           const parsed = JSON.parse(evt.target.result);
           this.parseLegendData(parsed);
-          this.statusMessage.textContent = `Loaded ${this.legendKeys.length} legend classes from ${file.name}.`;
+          this.statusText.textContent = `Loaded ${this.legendKeys.length} legend classes from ${file.name}.`;
         } catch (err) {
           alert("Invalid JSON format.");
         }
@@ -302,6 +342,19 @@ class AppController {
         this.stopRapidSampling();
       } else {
         this.startRapidSampling();
+      }
+    });
+
+    // Skip current color during Rapid Sampling
+    this.btnSkipSample.addEventListener('click', () => {
+      this.skipCurrentRapidSample();
+    });
+
+    // Spacebar listener to quickly skip island-only or pre-colored classes
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && this.isRapidSampling) {
+        e.preventDefault();
+        this.skipCurrentRapidSample();
       }
     });
 
@@ -359,7 +412,7 @@ class AppController {
   }
 
   /* -------------------------------------------------------------
-     Rapid Eyedropper Sampling Engine
+     Rapid Eyedropper Sampling Engine & Skip Handling
      ------------------------------------------------------------- */
   startRapidSampling() {
     if (!this.viewport.image || this.legendKeys.length === 0) return;
@@ -371,6 +424,7 @@ class AppController {
     this.btnRapidSample.textContent = '❌ Cancel Rapid Sampling';
     this.btnRapidSample.classList.add('sampling-active');
     this.statusMessage.classList.add('sampling-target');
+    this.btnSkipSample.style.display = 'inline-block';
 
     this.promptNextRapidSample();
   }
@@ -382,15 +436,16 @@ class AppController {
     this.btnRapidSample.textContent = '⚡ Rapid-Sample All Colors';
     this.btnRapidSample.classList.remove('sampling-active');
     this.statusMessage.classList.remove('sampling-target');
+    this.btnSkipSample.style.display = 'none';
 
     document.querySelectorAll('.legend-card').forEach(c => c.classList.remove('sampling-target'));
-    this.statusMessage.textContent = "Color sampling finished. Ready to trace & preview.";
+    this.statusText.textContent = "Color sampling finished. Ready to trace & preview.";
   }
 
   promptNextRapidSample() {
     if (this.rapidSampleIndex >= this.legendKeys.length) {
       this.stopRapidSampling();
-      this.statusMessage.textContent = "✅ All legend colors captured! Ready to Trace & Preview.";
+      this.statusText.textContent = "✅ All legend colors captured! Ready to Trace & Preview.";
       return;
     }
 
@@ -404,21 +459,37 @@ class AppController {
       targetCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    this.statusMessage.textContent = `🎯 Tap map for: "${currentItem.name}" (${this.rapidSampleIndex + 1}/${this.legendKeys.length})`;
+    this.statusText.textContent = `🎯 Tap map for: "${currentItem.name}" (${this.rapidSampleIndex + 1}/${this.legendKeys.length})`;
+  }
+
+  skipCurrentRapidSample() {
+    if (!this.isRapidSampling) return;
+    const currentKey = this.legendKeys[this.rapidSampleIndex];
+    const currentItem = this.thematicMetadata[currentKey];
+    this.statusText.textContent = `Skipped "${currentItem.name}". Keeping default color.`;
+    this.rapidSampleIndex++;
+    this.promptNextRapidSample();
   }
 
   startSingleSample(key) {
     if (this.isRapidSampling) return;
     this.singleSampleKey = key;
     this.viewport.mode = 'eyedropper';
-    const item = this.thematicMetadata[key];
 
     document.querySelectorAll('.legend-card').forEach(c => c.classList.remove('sampling-target'));
-    const targetCard = document.getElementById(`legend-card-${key}`);
-    if (targetCard) targetCard.classList.add('sampling-target');
 
-    this.statusMessage.classList.add('sampling-target');
-    this.statusMessage.textContent = `🎯 Tap map for: "${item.name}"`;
+    if (key === '__barrier__') {
+      this.barrierCard.classList.add('sampling-target');
+      this.statusMessage.classList.add('sampling-target');
+      this.statusText.textContent = `🎯 Tap uncolored map background to set Barrier Color`;
+    } else {
+      const item = this.thematicMetadata[key];
+      const targetCard = document.getElementById(`legend-card-${key}`);
+      if (targetCard) targetCard.classList.add('sampling-target');
+
+      this.statusMessage.classList.add('sampling-target');
+      this.statusText.textContent = `🎯 Tap map for: "${item.name}"`;
+    }
   }
 
   onColorSampled(x, y) {
@@ -440,6 +511,14 @@ class AppController {
 
       this.rapidSampleIndex++;
       this.promptNextRapidSample();
+    } else if (this.singleSampleKey === '__barrier__') {
+      this.barrierColor = hex;
+      this.swatchBarrier.value = hex;
+      this.singleSampleKey = null;
+      this.viewport.mode = 'navigate';
+      this.statusMessage.classList.remove('sampling-target');
+      this.barrierCard.classList.remove('sampling-target');
+      this.statusText.textContent = `Background barrier color set to ${hex.toUpperCase()}`;
     } else if (this.singleSampleKey) {
       this.thematicMetadata[this.singleSampleKey].color = hex;
       const swatch = document.getElementById(`swatch-${this.singleSampleKey}`);
@@ -449,7 +528,7 @@ class AppController {
       this.viewport.mode = 'navigate';
       this.statusMessage.classList.remove('sampling-target');
       document.querySelectorAll('.legend-card').forEach(c => c.classList.remove('sampling-target'));
-      this.statusMessage.textContent = `Color updated: ${hex.toUpperCase()}`;
+      this.statusText.textContent = `Color updated: ${hex.toUpperCase()}`;
     }
   }
 
@@ -520,7 +599,7 @@ class AppController {
 
   processAllLayers() {
     if (!this.viewport.image || this.legendKeys.length === 0) return;
-    this.statusMessage.textContent = "Locking boundaries & healing seams... Please wait.";
+    this.statusText.textContent = "Locking boundaries & healing seams... Please wait.";
 
     const img = this.viewport.image;
     const w = img.naturalWidth;
@@ -544,7 +623,7 @@ class AppController {
     // 2. Identify dark boundary lines & dilate by 2px to encapsulate anti-aliased edge ink
     const lineMask = ColorExtractor.extractLineStrokeMask(imgData, 150, 2);
 
-    // 3. Unified Labeled Grid (both active classes AND barrier/ignored classes participate)
+    // 3. Unified Labeled Grid (active classes, card barriers, AND UI background barrier participate)
     const labeledGrid = new Uint8Array(w * h);
 
     this.legendKeys.forEach((key, index) => {
@@ -569,17 +648,35 @@ class AppController {
       }
     });
 
+    // 3b. Incorporate UI Background Barrier if active (participates in healing to protect coastlines)
+    const barrierClassId = this.legendKeys.length + 1;
+    if (this.barrierColor) {
+      let bMask = ColorExtractor.extractColorMask(imgData, this.barrierColor, tolerance, false);
+      bMask = Morphology.open(bMask, w, h, 3);
+      if (kernelSize > 1) {
+        bMask = Morphology.close(bMask, w, h, kernelSize);
+      }
+
+      for (let i = 0; i < bMask.length; i++) {
+        if (bMask[i] === 1 && landMask[i] === 1 && lineMask[i] === 0) {
+          if (labeledGrid[i] === 0) {
+            labeledGrid[i] = barrierClassId;
+          }
+        }
+      }
+    }
+
     // 4. Seam Healing: Expands legitimate internal zones across gaps & erased lines
     const healedGrid = Morphology.healSeams(labeledGrid, landMask, w, h);
 
-    // 5. Trace & Smooth Contours (omits barrier/ignored classes from vector generation)
+    // 5. Trace & Smooth Contours (omits barrier classes and UI background barrier from export)
     const interimLayers = [];
     this.legendKeys.forEach((key, index) => {
       const classId = index + 1;
       const meta = this.thematicMetadata[key];
       if (!meta.color) return;
 
-      // Barrier/ignored classes participate in healing but are omitted from vector export
+      // Card-level barriers are omitted from vector export
       if (meta.isIgnored) return;
 
       const classMask = new Uint8Array(w * h);
@@ -623,7 +720,7 @@ class AppController {
 
     this.viewport.setVectorPreview(this.previewLayers);
     this.btnExport.disabled = this.extractedFeatures.length === 0;
-    this.statusMessage.textContent = `Extracted ${this.extractedFeatures.length} active classes. Ready to export.`;
+    this.statusText.textContent = `Extracted ${this.extractedFeatures.length} active classes. Ready to export.`;
   }
 }
 

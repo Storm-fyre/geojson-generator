@@ -44,9 +44,12 @@
         <span>▶</span>
       </button>
 
-      <!-- Dynamic Status & Sampler Hint Banner -->
+      <!-- Dynamic Status & Sampler Hint Banner with Skip Button -->
       <div class="toast-hint" id="statusMessage">
-        Upload a map image and load a Legend JSON to begin.
+        <span id="statusText">Upload a map image and load a Legend JSON to begin.</span>
+        <button type="button" id="btnSkipSample" class="btn-skip-sample" style="display: none;" title="Skip and keep current color (or press Spacebar)">
+          ⏭️ Skip (Space)
+        </button>
       </div>
     </div>
 
@@ -103,6 +106,22 @@
         <button id="btnRapidSample" class="btn btn-rapid" disabled>
           ⚡ Rapid-Sample All Colors
         </button>
+
+        <!-- Optional UI Background Barrier: Protects narrow coastal plains without touching the JSON -->
+        <button id="btnAddBarrier" class="btn btn-secondary btn-barrier-toggle" type="button">
+          🛡️ + Add Background Barrier
+        </button>
+
+        <div id="barrierCard" class="legend-card barrier-card" style="display: none;">
+          <div class="legend-card-left">
+            <span class="legend-card-title">🛡️ Background Barrier</span>
+          </div>
+          <div class="legend-card-right">
+            <input type="color" class="swatch-picker" id="swatchBarrier" value="#e2e2e6">
+            <button type="button" id="btnEyedropBarrier" class="btn-card-toggle" title="Tap map to sample background gray/white">🎯 Sample</button>
+            <button type="button" id="btnRemoveBarrier" class="btn-card-toggle" title="Remove background barrier">&times;</button>
+          </div>
+        </div>
 
         <div class="legend-cards-container" id="legendCardsContainer">
           <p class="muted empty-legend-notice">Load a JSON file to populate legend classes.</p>
