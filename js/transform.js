@@ -1,17 +1,20 @@
 /**
- * 7-Point Thin Plate Spline (TPS) Coordinate Reference System
+ * 10-Point Thin Plate Spline (TPS) Coordinate Reference System
  * Maps 2D Image Pixels (x, y) <--> WGS84 Geographic (Lon, Lat)
  * Provides local rubber-sheeting so adjusting one pin does not warp distant borders.
  */
 
 export const INDIA_ANCHORS = {
-  north: { lon: 76.78, lat: 35.50, label: 'N',  name: 'Kashmir / Siachen',        color: '#ef4444' },
-  south: { lon: 77.55, lat: 8.08,  label: 'S',  name: 'Kanyakumari',              color: '#10b981' },
-  west:  { lon: 68.18, lat: 23.71, label: 'W',  name: 'Gujarat (Ghuar Mota)',     color: '#3b82f6' },
-  east:  { lon: 97.40, lat: 28.01, label: 'E',  name: 'Arunachal (Kibithu)',      color: '#f59e0b' },
-  mizo:  { lon: 92.83, lat: 21.95, label: 'MZ', name: 'Mizoram Southern Tip',    color: '#ec4899' },
-  raj:   { lon: 73.88, lat: 30.12, label: 'RJ', name: 'Rajasthan Panhandle Apex', color: '#8b5cf6' },
-  chil:  { lon: 85.45, lat: 19.75, label: 'CH', name: 'Chilika Lake Spit',       color: '#06b6d4' }
+  north:  { lon: 76.78, lat: 35.50, label: 'N',  name: 'Kashmir / Siachen',                color: '#ef4444' },
+  south:  { lon: 77.55, lat: 8.08,  label: 'S',  name: 'Kanyakumari',                      color: '#10b981' },
+  west:   { lon: 68.18, lat: 23.71, label: 'W',  name: 'Gujarat (Ghuar Mota)',             color: '#3b82f6' },
+  east:   { lon: 97.40, lat: 28.01, label: 'E',  name: 'Arunachal (Kibithu)',              color: '#f59e0b' },
+  mizo:   { lon: 92.83, lat: 21.95, label: 'MZ', name: 'Mizoram Southern Tip',            color: '#ec4899' },
+  raj:    { lon: 73.88, lat: 30.12, label: 'RJ', name: 'Rajasthan Panhandle Apex',        color: '#8b5cf6' },
+  chil:   { lon: 85.45, lat: 19.75, label: 'CH', name: 'Chilika Lake Spit',               color: '#06b6d4' },
+  sikkim: { lon: 88.63, lat: 28.13, label: 'SK', name: 'Sikkim Northern Apex',            color: '#14b8a6' },
+  mumbai: { lon: 72.82, lat: 18.96, label: 'MB', name: 'Mumbai Coast / Salsette',         color: '#f97316' },
+  uk:     { lon: 81.00, lat: 30.22, label: 'UK', name: 'Uttarakhand (Lipulekh Corner)',   color: '#a855f7' }
 };
 
 export class GeoTransform {

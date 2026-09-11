@@ -1,5 +1,6 @@
 /**
- * Canvas Viewport, Aspect-Ratio Bounding Box & 7-Point TPS Calibration Pins
+ * Canvas Viewport, Bounding Box & 10-Point TPS Calibration Pins
+ * Features open-center crosshairs with outward-offset floating badges.
  */
 import { INDIA_ANCHORS } from './transform.js';
 
@@ -31,9 +32,9 @@ export class MapViewport {
     this.resizeHandleRadius = 9;
 
     this.draggedPin = null;
-    this.pinRadius = 10;
+    this.pinRadius = 9; // radius of the floating label badge
 
-    // All 7 Landmark Pins initialized
+    // All 10 Landmark Pins initialized
     this.pins = {};
     for (const key in INDIA_ANCHORS) {
       this.pins[key] = {
@@ -45,20 +46,37 @@ export class MapViewport {
 
     // Relative ratios within India's natural bounding box
     this.pinRatios = {
-      north: { rx: 0.35, ry: 0.00 },
-      south: { rx: 0.42, ry: 1.00 },
-      west:  { rx: 0.00, ry: 0.45 },
-      east:  { rx: 1.00, ry: 0.28 },
-      mizo:  { rx: 0.86, ry: 0.49 }, // Mizoram southern tip
-      raj:   { rx: 0.25, ry: 0.22 }, // Rajasthan panhandle apex
-      chil:  { rx: 0.65, ry: 0.58 }  // Chilika Lake northeast spit
+      north:  { rx: 0.35, ry: 0.00 },
+      south:  { rx: 0.42, ry: 1.00 },
+      west:   { rx: 0.00, ry: 0.45 },
+      east:   { rx: 1.00, ry: 0.28 },
+      mizo:   { rx: 0.86, ry: 0.49 },
+      raj:    { rx: 0.25, ry: 0.22 },
+      chil:   { rx: 0.65, ry: 0.58 },
+      sikkim: { rx: 0.70, ry: 0.27 },
+      mumbai: { rx: 0.16, ry: 0.60 },
+      uk:     { rx: 0.44, ry: 0.19 }
+    };
+
+    // Outward offset vectors so badges float into open space instead of covering the vertex
+    this.badgeOffsets = {
+      north:  { ox: 0,   oy: -22 },
+      south:  { ox: 0,   oy:  22 },
+      west:   { ox: -22, oy:   0 },
+      east:   { ox:  22, oy:   0 },
+      mizo:   { ox:  20, oy:  18 },
+      raj:    { ox: -20, oy: -18 },
+      chil:   { ox:  22, oy:  14 },
+      sikkim: { ox:   0, oy: -22 },
+      mumbai: { ox: -22, oy:   0 },
+      uk:     { ox:  18, oy: -18 }
     };
 
     this.referenceGeojson = null;
     this.geoTransform = null;
     this.vectorPreview = null;
     this.overlayOpacity = 0.45;
-    this.overlayColor = '#00ffff'; // User-customizable reference overlay color
+    this.overlayColor = '#00ffff';
 
     this.initEventListeners();
   }
@@ -69,13 +87,16 @@ export class MapViewport {
   }
 
   getOverlayFillColor() {
-    // Converts hex to rgba with soft ~14% fill opacity
     const hex = this.overlayColor.replace('#', '');
     const bigint = parseInt(hex, 16);
     const r = (bigint >> 16) & 255;
     const g = (bigint >> 8) & 255;
     const b = bigint & 255;
     return `rgba(${r}, ${g}, ${b}, 0.14)`;
+  }
+
+  getBadgeOffset(key) {
+    return this.badgeOffsets[key] || { ox: 18, oy: -18 };
   }
 
   resize() {
@@ -256,8 +277,15 @@ export class MapViewport {
       for (const key in this.pins) {
         const pin = this.pins[key];
         const screenPos = this.imageToScreenCoords(pin.x, pin.y);
-        const dist = Math.hypot(screenPos.x - e.offsetX, screenPos.y - e.offsetY);
-        if (dist <= this.pinRadius + 6) {
+        const offset = this.getBadgeOffset(key);
+        const badgeX = screenPos.x + offset.ox;
+        const badgeY = screenPos.y + offset.oy;
+
+        const distCross = Math.hypot(screenPos.x - e.offsetX, screenPos.y - e.offsetY);
+        const distBadge = Math.hypot(badgeX - e.offsetX, badgeY - e.offsetY);
+
+        // Click either the crosshair vertex or the floating badge to drag
+        if (distCross <= 12 || distBadge <= this.pinRadius + 4) {
           this.draggedPin = key;
           return;
         }
@@ -332,7 +360,7 @@ export class MapViewport {
 
     ctx.drawImage(this.image, 0, 0);
 
-    // Live Reference India Boundary (with user-selected color)
+    // Live Reference India Boundary
     if (this.referenceGeojson && this.geoTransform && this.geoTransform.isCalibrated) {
       ctx.save();
       ctx.strokeStyle = this.overlayColor;
@@ -391,25 +419,63 @@ export class MapViewport {
       ctx.stroke();
       ctx.restore();
     } else {
-      // 7 Draggable Pins in screen space
+      // 10 Precision Pins: Open-center crosshair + outward floating letter badge
       for (const key in this.pins) {
         const pin = this.pins[key];
         const screenPos = this.imageToScreenCoords(pin.x, pin.y);
+        const offset = this.getBadgeOffset(key);
+        const badgeX = screenPos.x + offset.ox;
+        const badgeY = screenPos.y + offset.oy;
+
+        const arm = 7; // crosshair arm length
+        const gap = 2; // open center gap so the vertex underneath is 100% visible
 
         ctx.save();
+
+        // 1. Leader line connecting vertex to floating badge
         ctx.beginPath();
-        ctx.arc(screenPos.x, screenPos.y, this.pinRadius, 0, Math.PI * 2);
+        ctx.moveTo(screenPos.x, screenPos.y);
+        ctx.lineTo(badgeX, badgeY);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([2, 2]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // 2. High-contrast Crosshair (Dark outline for contrast on white/colored maps)
+        ctx.lineWidth = 3.5;
+        ctx.strokeStyle = '#000000';
+        ctx.beginPath();
+        ctx.moveTo(screenPos.x - arm, screenPos.y);
+        ctx.lineTo(screenPos.x - gap, screenPos.y);
+        ctx.moveTo(screenPos.x + gap, screenPos.y);
+        ctx.lineTo(screenPos.x + arm, screenPos.y);
+        ctx.moveTo(screenPos.x, screenPos.y - arm);
+        ctx.lineTo(screenPos.x, screenPos.y - gap);
+        ctx.moveTo(screenPos.x, screenPos.y + gap);
+        ctx.lineTo(screenPos.x, screenPos.y + arm);
+        ctx.stroke();
+
+        // Inner colored crosshair
+        ctx.lineWidth = 1.6;
+        ctx.strokeStyle = pin.color;
+        ctx.stroke();
+
+        // 3. Floating circular badge with alphabet code
+        ctx.beginPath();
+        ctx.arc(badgeX, badgeY, this.pinRadius, 0, Math.PI * 2);
         ctx.fillStyle = pin.color;
         ctx.fill();
-        ctx.lineWidth = 2.5;
+        ctx.lineWidth = 2;
         ctx.strokeStyle = '#ffffff';
         ctx.stroke();
 
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 9.5px sans-serif';
+        ctx.font = 'bold 8.5px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(pin.label, screenPos.x, screenPos.y);
+        ctx.fillText(pin.label, badgeX, badgeY);
+
         ctx.restore();
       }
     }

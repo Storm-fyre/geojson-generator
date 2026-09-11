@@ -414,6 +414,7 @@ canvas#mapCanvas {
   color: #fff;
 }
 
+/* 10 Pin Badge Color Schemes */
 .pin-north { background-color: #ef4444; }
 .pin-south { background-color: #10b981; }
 .pin-west  { background-color: #3b82f6; }
@@ -421,6 +422,9 @@ canvas#mapCanvas {
 .pin-mizo  { background-color: #ec4899; }
 .pin-raj   { background-color: #8b5cf6; }
 .pin-chil  { background-color: #06b6d4; }
+.pin-sk    { background-color: #14b8a6; }
+.pin-mb    { background-color: #f97316; }
+.pin-uk    { background-color: #a855f7; }
 
 /* Thematic Legend Cards */
 .legend-cards-container {
