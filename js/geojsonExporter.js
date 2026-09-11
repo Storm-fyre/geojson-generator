@@ -1,14 +1,10 @@
 /**
  * Universal Thematic GeoJSON Assembler & Serializer
  * Outputs CRS:84 compliant FeatureCollection with each entity on its own line.
+ * Injects simplified island vector geometries into designated thematic classes.
  */
 
 export class GeoJsonExporter {
-  /**
-   * Assemble complete FeatureCollection object
-   * @param {Array} features - Array of features generated per category
-   * @param {string} themeName - Identifier name for collection
-   */
   static buildFeatureCollection(features, themeName = "THEMATIC_MAP") {
     return {
       type: "FeatureCollection",
@@ -25,7 +21,7 @@ export class GeoJsonExporter {
 
   /**
    * Build a single Feature entry for any thematic category.
-   * Dynamically forwards all attributes from the metadata JSON.
+   * Converts pixel coordinate rings to WGS84 GeoJSON MultiPolygon.
    */
   static createThematicFeature(classKey, metadata, polygonRings, geoTransform) {
     if (!polygonRings || polygonRings.length === 0) return null;
@@ -44,7 +40,7 @@ export class GeoJsonExporter {
         ]);
       }
 
-      // Ensure closed LinearRing (first and last vertex identical)
+      // Ensure closed LinearRing
       const first = geoRing[0];
       const last = geoRing[geoRing.length - 1];
       if (first[0] !== last[0] || first[1] !== last[1]) {
@@ -56,16 +52,15 @@ export class GeoJsonExporter {
 
     if (multiPolygonCoordinates.length === 0) return null;
 
-    // Dynamically forward all metadata properties
     const properties = {
       class_key: classKey,
       name: metadata.name || classKey,
       color: metadata.color || "#000000"
     };
 
-    // Forward any additional custom attributes present in the loaded JSON
+    // Dynamically forward any custom attributes from the metadata JSON
     for (const prop in metadata) {
-      if (!properties.hasOwnProperty(prop)) {
+      if (!properties.hasOwnProperty(prop) && prop !== 'isIgnored') {
         properties[prop] = metadata[prop];
       }
     }
@@ -81,9 +76,56 @@ export class GeoJsonExporter {
   }
 
   /**
+   * Injects high-precision simplified island vector geometries into the selected classes.
+   * If a class exists, islands are appended to its MultiPolygon coordinates.
+   * If a class is island-only, a new Feature is created.
+   */
+  static injectIslandsIntoFeatures(features, islandAssignments, islandGeomsMap, thematicMetadata) {
+    const updatedFeatures = [...features];
+
+    for (const islandKey of ['andaman', 'nicobar', 'lakshadweep']) {
+      const targetClassKey = islandAssignments[islandKey];
+      if (!targetClassKey) continue;
+
+      const islandPolys = islandGeomsMap[islandKey];
+      if (!islandPolys || islandPolys.length === 0) continue;
+
+      const existingFeature = updatedFeatures.find(f => f.properties && f.properties.class_key === targetClassKey);
+
+      if (existingFeature) {
+        // Append island polygons to existing feature MultiPolygon coordinates
+        existingFeature.geometry.coordinates.push(...islandPolys);
+      } else {
+        // Create dedicated feature for this class if only present on islands
+        const meta = thematicMetadata[targetClassKey] || { name: targetClassKey, color: "#7b1fa2" };
+        const properties = {
+          class_key: targetClassKey,
+          name: meta.name || targetClassKey,
+          color: meta.color || "#000000"
+        };
+        for (const prop in meta) {
+          if (!properties.hasOwnProperty(prop) && prop !== 'isIgnored') {
+            properties[prop] = meta[prop];
+          }
+        }
+
+        updatedFeatures.push({
+          type: "Feature",
+          geometry: {
+            type: "MultiPolygon",
+            coordinates: [...islandPolys]
+          },
+          properties: properties
+        });
+      }
+    }
+
+    return updatedFeatures;
+  }
+
+  /**
    * Formats the FeatureCollection so that each Feature entity occupies
-   * exactly one dedicated line, making it clean, easy to inspect in VS Code,
-   * and 100% compliant with standard GeoJSON parsers.
+   * exactly one dedicated line (matching python merge_islands.py output).
    */
   static formatPerEntityJson(jsonObject) {
     if (!jsonObject || jsonObject.type !== "FeatureCollection" || !Array.isArray(jsonObject.features)) {
@@ -92,7 +134,6 @@ export class GeoJsonExporter {
 
     const header = `{\n  "type": "FeatureCollection",\n  "name": ${JSON.stringify(jsonObject.name || "THEMATIC_MAP")},\n  "crs": ${JSON.stringify(jsonObject.crs || {})},\n  "features": [\n`;
     
-    // Each feature serialized into a single continuous line
     const featureLines = jsonObject.features
       .map(feat => `    ${JSON.stringify(feat)}`)
       .join(',\n');
@@ -102,9 +143,6 @@ export class GeoJsonExporter {
     return header + featureLines + footer;
   }
 
-  /**
-   * Trigger browser file download for a GeoJSON object
-   */
   static downloadJson(jsonObject, filename = "thematic_map.geojson") {
     const formattedString = this.formatPerEntityJson(jsonObject);
     const blob = new Blob([formattedString], { type: "application/geo+json;charset=utf-8" });

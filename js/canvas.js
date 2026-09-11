@@ -58,8 +58,24 @@ export class MapViewport {
     this.geoTransform = null;
     this.vectorPreview = null;
     this.overlayOpacity = 0.45;
+    this.overlayColor = '#00ffff'; // User-customizable reference overlay color
 
     this.initEventListeners();
+  }
+
+  setOverlayColor(colorHex) {
+    this.overlayColor = colorHex;
+    this.render();
+  }
+
+  getOverlayFillColor() {
+    // Converts hex to rgba with soft ~14% fill opacity
+    const hex = this.overlayColor.replace('#', '');
+    const bigint = parseInt(hex, 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return `rgba(${r}, ${g}, ${b}, 0.14)`;
   }
 
   resize() {
@@ -149,23 +165,6 @@ export class MapViewport {
         ry: (this.pins[key].y - minY) / bh
       };
     }
-  }
-
-  setBoxScalePercent(percent) {
-    const factor = percent / 100;
-    const cx = this.box.x + this.box.w / 2;
-    const cy = this.box.y + this.box.h / 2;
-
-    const newW = Math.round(this.baseBox.w * factor);
-    const newH = Math.round(newW / this.aspectRatio);
-
-    this.box.x = Math.round(cx - newW / 2);
-    this.box.y = Math.round(cy - newH / 2);
-    this.box.w = newW;
-    this.box.h = newH;
-
-    this.updatePinsFromBox();
-    this.render();
   }
 
   fitToScreen() {
@@ -333,12 +332,12 @@ export class MapViewport {
 
     ctx.drawImage(this.image, 0, 0);
 
-    // Live Reference India Boundary
+    // Live Reference India Boundary (with user-selected color)
     if (this.referenceGeojson && this.geoTransform && this.geoTransform.isCalibrated) {
       ctx.save();
-      ctx.strokeStyle = '#00ffff';
+      ctx.strokeStyle = this.overlayColor;
       ctx.lineWidth = 1.6 / this.scale;
-      ctx.fillStyle = 'rgba(0, 255, 255, 0.12)';
+      ctx.fillStyle = this.getOverlayFillColor();
       ctx.globalAlpha = this.overlayOpacity;
 
       this.drawGeoJson(ctx, this.referenceGeojson);
@@ -377,7 +376,7 @@ export class MapViewport {
       const bh = br.y - tl.y;
 
       ctx.save();
-      ctx.strokeStyle = 'rgba(0, 229, 255, 0.85)';
+      ctx.strokeStyle = this.overlayColor;
       ctx.setLineDash([6, 4]);
       ctx.lineWidth = 2;
       ctx.strokeRect(tl.x, tl.y, bw, bh);
@@ -385,7 +384,7 @@ export class MapViewport {
       ctx.setLineDash([]);
       ctx.beginPath();
       ctx.arc(br.x, br.y, this.resizeHandleRadius, 0, Math.PI * 2);
-      ctx.fillStyle = '#00ffff';
+      ctx.fillStyle = this.overlayColor;
       ctx.fill();
       ctx.lineWidth = 2;
       ctx.strokeStyle = '#ffffff';

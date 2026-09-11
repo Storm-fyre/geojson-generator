@@ -1,5 +1,5 @@
 /**
- * Master Application Controller - Truly Universal Thematic Engine
+ * Master Application Controller - Geojson Generator
  */
 import { MapViewport } from './canvas.js';
 import { GeoTransform } from './transform.js';
@@ -22,11 +22,17 @@ class AppController {
     this.previewLayers = [];
     this.indiaGeojson = null;
 
+    // Island geometries pre-extracted from india.geojson
+    this.islandGeometries = {
+      andaman: [],
+      nicobar: [],
+      lakshadweep: []
+    };
+
     this.initElements();
     this.initCanvas();
     this.bindUiEvents();
-    this.loadIndiaReference();
-    this.loadDefaultTheme();
+    this.loadIndiaReference(); // Starts completely clean with zero hardcoded theme preloads
   }
 
   initElements() {
@@ -44,8 +50,18 @@ class AppController {
     this.btnModePins = document.getElementById('btnModePins');
     this.boxControls = document.getElementById('boxControls');
     this.pinControls = document.getElementById('pinControls');
+    this.overlayColorPicker = document.getElementById('overlayColorPicker');
 
-    // Advanced tuning controls
+    // Island assignment select dropdowns
+    this.islandAndaman = document.getElementById('islandAndaman');
+    this.islandNicobar = document.getElementById('islandNicobar');
+    this.islandLakshadweep = document.getElementById('islandLakshadweep');
+
+    // Advanced tuning controls & Help modal
+    this.btnOpenHelp = document.getElementById('btnOpenHelp');
+    this.btnCloseHelp = document.getElementById('btnCloseHelp');
+    this.helpModal = document.getElementById('helpModal');
+
     this.colorTolerance = document.getElementById('colorTolerance');
     this.tolVal = document.getElementById('tolVal');
     this.morphClosing = document.getElementById('morphClosing');
@@ -71,31 +87,19 @@ class AppController {
       if (response.ok) {
         this.indiaGeojson = await response.json();
         this.viewport.setReferenceGeojson(this.indiaGeojson, this.transform);
-        this.statusMessage.textContent = "India reference loaded. Load your map image to begin.";
+
+        // Pre-simplify island vector geometries using Python-matching RDP logic
+        this.islandGeometries.andaman = Vectorizer.extractIslandPolygons(this.indiaGeojson, 'andaman');
+        this.islandGeometries.nicobar = Vectorizer.extractIslandPolygons(this.indiaGeojson, 'nicobar');
+        this.islandGeometries.lakshadweep = Vectorizer.extractIslandPolygons(this.indiaGeojson, 'lakshadweep');
+
+        this.statusMessage.textContent = "Reference loaded. Load your map image and Legend JSON to begin.";
       }
     } catch (e) {
       console.warn("Could not load reference data/india.geojson", e);
     }
   }
 
-  async loadDefaultTheme() {
-    try {
-      const res = await fetch('data/soil_properties.json');
-      if (res.ok) {
-        const data = await res.json();
-        this.themeName = "soils";
-        this.parseLegendData(data);
-      }
-    } catch (e) {
-      console.log("No default soil_properties.json found. Ready for custom JSON.");
-    }
-  }
-
-  /**
-   * Universal parser for any thematic JSON:
-   * Supports dictionaries { key: { name: "...", color: "...", ... } }
-   * or arrays of objects [ { key: "...", name: "...", ... } ]
-   */
   parseLegendData(data) {
     this.thematicMetadata = {};
     this.legendKeys = [];
@@ -106,24 +110,27 @@ class AppController {
         this.thematicMetadata[key] = {
           name: item.name || item.title || key,
           color: item.color || "#424242",
+          isIgnored: false,
           ...item
         };
         this.legendKeys.push(key);
       });
     } else if (typeof data === 'object' && data !== null) {
       for (const key in data) {
-        if (key.startsWith('_')) continue; // skip metadata like _theme_name
+        if (key.startsWith('_')) continue;
         const val = data[key];
         if (typeof val === 'object' && val !== null) {
           this.thematicMetadata[key] = {
             name: val.name || val.title || key,
             color: val.color || "#424242",
+            isIgnored: false,
             ...val
           };
         } else {
           this.thematicMetadata[key] = {
             name: String(val),
-            color: "#424242"
+            color: "#424242",
+            isIgnored: false
           };
         }
         this.legendKeys.push(key);
@@ -134,6 +141,7 @@ class AppController {
     }
 
     this.renderLegendCards();
+    this.populateIslandDropdowns();
     this.btnRapidSample.disabled = this.legendKeys.length === 0 || !this.viewport.image;
     this.btnExport.textContent = `💾 Export ${this.themeName}.geojson`;
   }
@@ -149,33 +157,68 @@ class AppController {
       const item = this.thematicMetadata[key];
 
       const card = document.createElement('div');
-      card.className = 'legend-card';
+      card.className = `legend-card ${item.isIgnored ? 'is-ignored' : ''}`;
       card.id = `legend-card-${key}`;
       card.dataset.key = key;
-      card.dataset.index = index;
 
       card.innerHTML = `
         <div class="legend-card-left">
           <span class="legend-card-title" title="${item.name}">${index + 1}. ${item.name}</span>
         </div>
         <div class="legend-card-right">
+          <button type="button" class="btn-card-toggle ${item.isIgnored ? 'active-ignore' : ''}" id="toggle-ignore-${key}" title="${item.isIgnored ? 'Excluded from export (Acts as Barrier)' : 'Click to treat as Barrier/Background (excluded from export)'}">
+            ${item.isIgnored ? '🛡️ Barrier' : 'Active'}
+          </button>
           <input type="color" class="swatch-picker" id="swatch-${key}" value="${item.color}">
         </div>
       `;
 
-      // Manual color swatch change
+      // Swatch color picker change
       const picker = card.querySelector(`#swatch-${key}`);
       picker.addEventListener('input', (e) => {
         item.color = e.target.value;
       });
 
-      // Clicking card allows single-class eyedropper
+      // Barrier / Ignore Toggle: protects narrow coastal plains without exporting the background
+      const btnIgnore = card.querySelector(`#toggle-ignore-${key}`);
+      btnIgnore.addEventListener('click', (e) => {
+        e.stopPropagation();
+        item.isIgnored = !item.isIgnored;
+        card.classList.toggle('is-ignored', item.isIgnored);
+        btnIgnore.classList.toggle('active-ignore', item.isIgnored);
+        btnIgnore.textContent = item.isIgnored ? '🛡️ Barrier' : 'Active';
+        btnIgnore.title = item.isIgnored ? 'Excluded from export (Acts as Barrier)' : 'Click to treat as Barrier/Background (excluded from export)';
+        this.populateIslandDropdowns();
+      });
+
+      // Clicking card triggers single-class eyedropper
       card.addEventListener('click', (e) => {
-        if (e.target.tagName.toLowerCase() === 'input') return;
+        if (e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'button') return;
         this.startSingleSample(key);
       });
 
       this.legendCardsContainer.appendChild(card);
+    });
+  }
+
+  populateIslandDropdowns() {
+    const selects = [this.islandAndaman, this.islandNicobar, this.islandLakshadweep];
+
+    selects.forEach(select => {
+      const prevVal = select.value;
+      select.innerHTML = '<option value="">-- Do Not Include --</option>';
+
+      this.legendKeys.forEach(key => {
+        const item = this.thematicMetadata[key];
+        // Exclude ignored/barrier classes from island assignment
+        if (item.isIgnored) return;
+
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = item.name;
+        if (key === prevVal) opt.selected = true;
+        select.appendChild(opt);
+      });
     });
   }
 
@@ -186,6 +229,11 @@ class AppController {
         setTimeout(() => this.viewport.resize(), 260);
       });
     }
+
+    // Reference Boundary Color Change
+    this.overlayColorPicker.addEventListener('input', (e) => {
+      this.viewport.setOverlayColor(e.target.value);
+    });
 
     // Step 1 Modes
     this.btnModeBox.addEventListener('click', () => {
@@ -272,18 +320,46 @@ class AppController {
     this.morphClosing.addEventListener('input', (e) => this.morphVal.textContent = `${e.target.value}px`);
     this.simplifyTol.addEventListener('input', (e) => this.simplifyVal.textContent = parseFloat(e.target.value).toFixed(1));
 
+    // Help Modal Open / Close
+    this.btnOpenHelp.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.helpModal.style.display = 'flex';
+    });
+    this.btnCloseHelp.addEventListener('click', () => {
+      this.helpModal.style.display = 'none';
+    });
+    this.helpModal.addEventListener('click', (e) => {
+      if (e.target === this.helpModal) this.helpModal.style.display = 'none';
+    });
+
     // Extraction & Export
     this.btnGeneratePreview.addEventListener('click', () => this.processAllLayers());
 
     this.btnExport.addEventListener('click', () => {
       if (this.extractedFeatures.length === 0) return;
-      const finalGeoJson = GeoJsonExporter.buildFeatureCollection(this.extractedFeatures, this.themeName);
+
+      const islandAssignments = {
+        andaman: this.islandAndaman.value,
+        nicobar: this.islandNicobar.value,
+        lakshadweep: this.islandLakshadweep.value
+      };
+
+      // Seamlessly inject official simplified island geometries into chosen classes
+      const finalFeatures = GeoJsonExporter.injectIslandsIntoFeatures(
+        this.extractedFeatures,
+        islandAssignments,
+        this.islandGeometries,
+        this.thematicMetadata
+      );
+
+      const finalGeoJson = GeoJsonExporter.buildFeatureCollection(finalFeatures, this.themeName);
       GeoJsonExporter.downloadJson(finalGeoJson, `${this.themeName}.geojson`);
     });
   }
 
   /* -------------------------------------------------------------
-     Sequential Auto-Advancing Color Sampler Engine
+     Rapid Eyedropper Sampling Engine
      ------------------------------------------------------------- */
   startRapidSampling() {
     if (!this.viewport.image || this.legendKeys.length === 0) return;
@@ -321,7 +397,6 @@ class AppController {
     const currentKey = this.legendKeys[this.rapidSampleIndex];
     const currentItem = this.thematicMetadata[currentKey];
 
-    // Highlight card
     document.querySelectorAll('.legend-card').forEach(c => c.classList.remove('sampling-target'));
     const targetCard = document.getElementById(`legend-card-${currentKey}`);
     if (targetCard) {
@@ -329,7 +404,6 @@ class AppController {
       targetCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    // Dynamic prompt banner
     this.statusMessage.textContent = `🎯 Tap map for: "${currentItem.name}" (${this.rapidSampleIndex + 1}/${this.legendKeys.length})`;
   }
 
@@ -380,7 +454,7 @@ class AppController {
   }
 
   /* -------------------------------------------------------------
-     Airtight Landmask & Thematic Vectorization Pipeline
+     Mainland-Only Landmask & Thematic Vectorization Pipeline
      ------------------------------------------------------------- */
   createLandMask(width, height) {
     const canvas = document.createElement('canvas');
@@ -395,6 +469,16 @@ class AppController {
       const features = this.indiaGeojson.features || [this.indiaGeojson];
 
       for (const feat of features) {
+        const props = feat.properties || {};
+        const featId = (props.id || '').toUpperCase();
+        const featName = (props.name || '').toLowerCase();
+
+        // STRICT MAINLAND FILTER: Exclude Lakshadweep and Andaman & Nicobar from raster masking!
+        // This ensures photo ocean smudges, scanner artifacts, and misplaced insets are 100% ignored.
+        if (featId === 'INLD' || featId === 'INAN' || featName.includes('lakshadweep') || featName.includes('andaman')) {
+          continue;
+        }
+
         const geom = feat.geometry;
         if (!geom) continue;
 
@@ -454,13 +538,13 @@ class AppController {
     const minArea = parseInt(this.minArea.value, 10);
     const simplifyTol = parseFloat(this.simplifyTol.value);
 
-    // 1. Airtight Land Mask (1 = Country interior, 0 = Outside margin/ocean)
+    // 1. Mainland-only landmask (ignoring ocean islands in photo)
     const landMask = this.createLandMask(w, h);
 
-    // 2. Identify Boundary Lines & dilate by 2px to eliminate anti-aliased edge ink
+    // 2. Identify dark boundary lines & dilate by 2px to encapsulate anti-aliased edge ink
     const lineMask = ColorExtractor.extractLineStrokeMask(imgData, 150, 2);
 
-    // 3. Unified Labeled Grid
+    // 3. Unified Labeled Grid (both active classes AND barrier/ignored classes participate)
     const labeledGrid = new Uint8Array(w * h);
 
     this.legendKeys.forEach((key, index) => {
@@ -485,15 +569,18 @@ class AppController {
       }
     });
 
-    // 4. Seam Healing: Expand internal legitimate soils outward across gaps
+    // 4. Seam Healing: Expands legitimate internal zones across gaps & erased lines
     const healedGrid = Morphology.healSeams(labeledGrid, landMask, w, h);
 
-    // 5. Trace & Smooth Contours
+    // 5. Trace & Smooth Contours (omits barrier/ignored classes from vector generation)
     const interimLayers = [];
     this.legendKeys.forEach((key, index) => {
       const classId = index + 1;
       const meta = this.thematicMetadata[key];
       if (!meta.color) return;
+
+      // Barrier/ignored classes participate in healing but are omitted from vector export
+      if (meta.isIgnored) return;
 
       const classMask = new Uint8Array(w * h);
       for (let i = 0; i < healedGrid.length; i++) {
@@ -536,7 +623,7 @@ class AppController {
 
     this.viewport.setVectorPreview(this.previewLayers);
     this.btnExport.disabled = this.extractedFeatures.length === 0;
-    this.statusMessage.textContent = `Extracted ${this.extractedFeatures.length} classes. Ready to export.`;
+    this.statusMessage.textContent = `Extracted ${this.extractedFeatures.length} active classes. Ready to export.`;
   }
 }
 

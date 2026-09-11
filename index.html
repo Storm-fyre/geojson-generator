@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IndicAtlas Thematic GeoJSON Generator</title>
+  <title>Geojson Generator</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <header class="app-header">
     <div class="brand">
       <span class="logo">🗺️</span>
-      <h1>IndicAtlas Thematic GeoJSON Generator</h1>
+      <h1>Geojson Generator</h1>
     </div>
     <div class="header-actions">
       <label class="btn btn-secondary file-label" for="imageInput">
@@ -69,7 +69,7 @@
 
         <div id="boxControls">
           <div class="box-instructions">
-            Drag inside the box to move it over India. Drag the bottom-right cyan handle directly on canvas to scale.
+            Drag inside the box to move it over India. Drag the bottom-right handle directly on canvas to scale.
           </div>
         </div>
 
@@ -83,6 +83,13 @@
             <div class="pin-row" data-pin="mizo"><span class="pin-badge pin-mizo">MZ</span><span>Mizoram (Southern Tip)</span></div>
             <div class="pin-row" data-pin="raj"><span class="pin-badge pin-raj">RJ</span><span>Rajasthan (Panhandle Apex)</span></div>
             <div class="pin-row" data-pin="chil"><span class="pin-badge pin-chil">CH</span><span>Chilika Lake (NE Spit)</span></div>
+          </div>
+        </div>
+
+        <div class="overlay-color-row">
+          <label for="overlayColorPicker">Reference Boundary Color:</label>
+          <div class="color-picker-wrapper">
+            <input type="color" id="overlayColorPicker" class="swatch-picker" value="#00ffff" title="Choose boundary overlay color">
           </div>
         </div>
       </section>
@@ -102,20 +109,56 @@
         </div>
       </section>
 
-      <!-- Step 3: Vectorization -->
+      <!-- Step 3: Geographic Island Assignment -->
       <section class="panel-section">
         <div class="section-title-row">
-          <h3>3. Polygon Extraction</h3>
+          <h3>3. Island Assignments</h3>
+        </div>
+        <p class="muted" style="margin-bottom: 0.6rem;">
+          Islands bypass photo scanning and are injected directly from standard high-precision vector boundaries.
+        </p>
+
+        <div class="island-control-group">
+          <div class="island-row">
+            <label for="islandAndaman">🏝️ Andaman Islands:</label>
+            <select id="islandAndaman" class="select-input">
+              <option value="">-- Do Not Include --</option>
+            </select>
+          </div>
+
+          <div class="island-row">
+            <label for="islandNicobar">🏝️ Nicobar Islands:</label>
+            <select id="islandNicobar" class="select-input">
+              <option value="">-- Do Not Include --</option>
+            </select>
+          </div>
+
+          <div class="island-row">
+            <label for="islandLakshadweep">🏝️ Lakshadweep:</label>
+            <select id="islandLakshadweep" class="select-input">
+              <option value="">-- Do Not Include --</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 4: Vectorization & Extraction -->
+      <section class="panel-section">
+        <div class="section-title-row">
+          <h3>4. Polygon Extraction</h3>
         </div>
         <button id="btnGeneratePreview" class="btn btn-action" disabled>
           ⚡ Trace & Preview GeoJSON
         </button>
       </section>
 
-      <!-- Step 4: Visible Advanced Quality Tuning Card -->
+      <!-- Step 5: Advanced Quality Tuning Accordion -->
       <details class="panel-section advanced-accordion" id="advancedAccordion">
         <summary class="advanced-summary">
-          <span class="advanced-title">⚙️ Advanced Quality Tuning</span>
+          <div class="summary-left">
+            <span class="advanced-title">⚙️ Advanced Quality Tuning</span>
+            <button type="button" id="btnOpenHelp" class="info-icon-btn" title="What do these sliders do?">ℹ️</button>
+          </div>
           <span class="accordion-arrow">▼</span>
         </summary>
         <div class="accordion-content">
@@ -147,6 +190,46 @@
       </details>
     </aside>
   </main>
+
+  <!-- Informational Modal Popup for Quality Tuning -->
+  <div class="modal-backdrop" id="helpModal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>⚙️ Quality Tuning Guide</h3>
+        <button type="button" id="btnCloseHelp" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="help-item">
+          <h4>🎨 Color Tolerance (Default: 15)</h4>
+          <p>Controls how forgiving the color matcher is against scanner noise, paper grain, and JPEG compression.</p>
+          <p class="help-tip"><strong>Tip:</strong> If regions appear patchy or full of holes, increase this. If colors bleed into neighboring different colors, decrease it.</p>
+        </div>
+
+        <div class="help-item">
+          <h4>📏 Filter Thin Lines (Default: 3px)</h4>
+          <p>Bridges across thin black state lines, rivers, and coordinate grids cutting through colored regions.</p>
+          <p class="help-tip"><strong>Tip:</strong> If dashed lines or rivers slice your polygon in half, increase to 5px so it automatically heals over the gap.</p>
+        </div>
+
+        <div class="help-item">
+          <h4>🧹 Min Polygon Area (Default: 15 px)</h4>
+          <p>The dust and speckle filter. Deletes rogue clusters smaller than this number of pixels.</p>
+          <p class="help-tip"><strong>Tip:</strong> Prevents thousands of microscopic speckles from cluttering your exported GeoJSON.</p>
+        </div>
+
+        <div class="help-item">
+          <h4>✨ Boundary Smoothing (Default: 1.0)</h4>
+          <p>The Douglas-Peucker simplification tolerance. Converts pixelated "staircase" edges into smooth vector curves.</p>
+          <p class="help-tip"><strong>Tip:</strong> Higher values create lighter file sizes and smoother boundaries. Lower values trace every single raw pixel.</p>
+        </div>
+
+        <div class="help-item">
+          <h4>👁️ Overlay Opacity (Default: 0.45)</h4>
+          <p>Adjusts the visual transparency of the vector preview overlay on canvas to compare alignment with the underlying map.</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="js/app.js"></script>
 </body>
