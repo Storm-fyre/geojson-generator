@@ -1,0 +1,101 @@
+{
+  "amw": {
+    "name": "Amw (Monsoon with Short Dry Season)",
+    "color": "#dcf5f6",
+    "sub_type": "Tropical Monsoon Climate",
+    "climatic_mechanism": "Intense orographic lifting of moisture-laden Southwest Monsoon winds against the windward slopes of the Western Ghats; maritime location prevents extreme temperature variations.",
+    "precipitation_regime": "Torrential monsoon precipitation (>250–300 cm annually) between June and September; brief, mild dry period during winter.",
+    "temperature_profile": "Uniformly high temperatures year-round (annual mean >27°C); very low diurnal and annual temperature range.",
+    "distinctive_features": "Supports luxuriant tropical wet evergreen and semi-evergreen rainforests; heavy runoff leads to intense soil leaching and laterization.",
+    "major_crops": "Rice, Spices (Cardamom, Black Pepper), Rubber, Coconut, Coffee, Tea, Areca Nut",
+    "states_covered": ["Kerala", "Coastal Karnataka", "Goa", "Konkan coast of Maharashtra"]
+  },
+  "as": {
+    "name": "As (Monsoon with Dry Summer)",
+    "color": "#a4e3d3",
+    "sub_type": "Tropical Dry Summer Monsoon Climate",
+    "climatic_mechanism": "Lies in the deep rain-shadow of the Western Ghats during the summer SW monsoon; receives peak rainfall from the retreating (North-East) monsoon depressions over the Bay of Bengal.",
+    "precipitation_regime": "Summer is markedly dry; major rainfall occurs between October and December (~75–100 cm), often accompanied by severe coastal cyclonic storms.",
+    "temperature_profile": "Warm and tropical throughout the year (mean >28°C); mild, humid winters with minimal thermal variation.",
+    "distinctive_features": "Unique inverted rainfall cycle in peninsular India where the primary agricultural season aligns with the retreating winter monsoon.",
+    "major_crops": "Rice (Samba crop), Groundnut, Pulses, Millets, Cotton, Sugarcane",
+    "states_covered": ["Coromandel Coast of Tamil Nadu", "Southern coastal Andhra Pradesh"]
+  },
+  "aw": {
+    "name": "Aw (Tropical Savanna)",
+    "color": "#d69263",
+    "sub_type": "Tropical Wet and Dry / Savanna Type",
+    "climatic_mechanism": "Alternating influence of the summer Intertropical Convergence Zone (ITCZ) migration and dry winter continental air masses over the peninsular plateau.",
+    "precipitation_regime": "Moderate rainfall (75–150 cm) concentrated strictly within the SW monsoon months; prolonged and severe drought conditions through winter and spring.",
+    "temperature_profile": "High temperatures throughout the year; peak summer temperatures frequently cross 40°C in May before cooling monsoon rains arrive.",
+    "distinctive_features": "Covers the largest portion of the peninsular plateau; characterized by tropical dry and moist deciduous forests; highly susceptible to agricultural drought if the monsoon is delayed.",
+    "major_crops": "Cotton, Soybean, Jowar, Bajra, Groundnut, Pulses, Sugarcane, Tobacco",
+    "states_covered": ["Maharashtra", "Telangana", "Andhra Pradesh", "Karnataka (Interior)", "Odisha", "Chhattisgarh", "Jharkhand", "Southern Madhya Pradesh"]
+  },
+  "cwg": {
+    "name": "Cwg (Monsoon with Dry Winter)",
+    "color": "#6b6ab7",
+    "sub_type": "Subtropical Humid / Ganga Type Climate",
+    "climatic_mechanism": "Continental interior regime fed by the Bay of Bengal branch of the SW monsoon in summer, with periodic winter cyclonic rain from Mediterranean Western Disturbances.",
+    "precipitation_regime": "Substantial summer rainfall (100–200 cm in the east, tapering to 60–75 cm in the west); dry, clear winters with light precipitation beneficial for Rabi crops.",
+    "temperature_profile": "Pronounced continental range: scorching summers (>42°C with dry, hot 'Loo' winds) contrasting with cold, foggy winters where minimums drop to 3–7°C.",
+    "distinctive_features": "Standard 'Ganga Type' climate; the letter 'g' signifies that the hottest month occurs prior to the summer monsoon (May/June); anchors India's most productive agricultural belt.",
+    "major_crops": "Wheat, Rice, Sugarcane, Mustard, Maize, Jute, Potato, Pulses",
+    "states_covered": ["Uttar Pradesh", "Bihar", "West Bengal", "Punjab", "Haryana", "Eastern Rajasthan", "Northern Madhya Pradesh", "Assam"]
+  },
+  "bshw": {
+    "name": "BShw (Semi-Arid Steppe)",
+    "color": "#f1d8c9",
+    "sub_type": "Tropical & Subtropical Semi-Arid Steppe",
+    "climatic_mechanism": "Present in two distinct belts: (1) the transition corridor between the Thar Desert and the northern plains, and (2) the leeward rain-shadow belt of the Western Ghats.",
+    "precipitation_regime": "Deficient and highly unreliable rainfall (30–65 cm annually); potential evapotranspiration far exceeds annual precipitation.",
+    "temperature_profile": "Mean annual temperatures exceed 18°C; intense summer heat (>40°C) with mild, dry winter months.",
+    "distinctive_features": "Vegetation consists of xerophytic scrub, open thorny woodland, and coarse steppe grasses; predominantly reliant on dryland farming and canal/tube-well irrigation.",
+    "major_crops": "Bajra, Jowar, Ragi, Guar, Pulses (Gram, Moong), Castor Seed, Groundnut, Cotton",
+    "states_covered": ["Western Haryana", "Southwest Punjab", "Central Rajasthan", "Northwestern Gujarat", "Interior rain-shadow tract of Maharashtra, Karnataka, and Andhra Pradesh"]
+  },
+  "bwhw": {
+    "name": "BWhw (Hot Desert)",
+    "color": "#7ed4cb",
+    "sub_type": "Low-Latitude Arid / Hot Desert Climate",
+    "climatic_mechanism": "Atmospheric subsidence in the subtropical high-pressure zone; vast distance from the Bay of Bengal monsoon and parallel orientation of the Aravalli range preventing orographic lift.",
+    "precipitation_regime": "Hyper-arid conditions with scant and irregular rainfall (<15–25 cm per year); sudden flash showers followed by long multi-year dry spells.",
+    "temperature_profile": "Extreme thermal regime: summer daytime highs often exceed 48°C with high diurnal drops at night; winter night temperatures can approach freezing point (0°C).",
+    "distinctive_features": "Shifting sand dunes (barchans), intense wind erosion, and high soil salinity; settled agriculture is viable only along dedicated canal corridors (e.g., Indira Gandhi Canal).",
+    "major_crops": "Bajra, Guar, Moth Bean, Irrigated Wheat, Mustard, Cotton, Date Palms",
+    "states_covered": ["Western Rajasthan (Jaisalmer, Bikaner, Barmer)", "Parts of Kutch (Gujarat)"]
+  },
+  "dfc": {
+    "name": "Dfc (Cold Humid Winter with Short Summer)",
+    "color": "#8a9b6c",
+    "sub_type": "Subarctic / Boreal Mountain Climate",
+    "climatic_mechanism": "High-altitude elevation in the Eastern Himalayas combined with perennial maritime moisture funneled through the Brahmaputra gorge.",
+    "precipitation_regime": "High annual precipitation (>200 cm); heavy pre-monsoon and monsoon downpours, transitioning to heavy winter snow and freezing rain at high passes.",
+    "temperature_profile": "Short, cool, humid summers (mean temperature <18°C) and long, severely cold, damp winters lasting over 5 months.",
+    "distinctive_features": "High cloud cover, dense alpine and sub-alpine coniferous forests (pines, firs, rhododendrons), high relative humidity year-round, and frequent landslides.",
+    "major_crops": "Maize, Barley, Buckwheat, Cardamom, Temperate Fruits (Kiwi, Apple, Orange), Potato",
+    "states_covered": ["Arunachal Pradesh", "Upper elevations of Sikkim"]
+  },
+  "et": {
+    "name": "Et (Tundra Type)",
+    "color": "#4d7b73",
+    "sub_type": "Alpine / Mountain Tundra",
+    "climatic_mechanism": "High elevations above the timberline in the Greater Himalayas; severe solar attenuation due to thin mountain air and high albedo from snowfields.",
+    "precipitation_regime": "Low absolute precipitation, mostly occurring as dry snow and blizzards during winter Western Disturbances; very low atmospheric humidity.",
+    "temperature_profile": "Short, cold summer where the warmest month averages between 0°C and 10°C; bitter, freezing winters plunging below -20°C.",
+    "distinctive_features": "Extends between the tree line and the permanent snow line; vegetation is restricted to alpine meadows (Bugyals), lichens, mosses, and dwarf junipers; permafrost terrain.",
+    "major_crops": "Transhumant pastoralism (Yak, Pashmina goat, Sheep rearing); minimal summer barley and buckwheat in sheltered micro-valleys",
+    "states_covered": ["High-altitude Uttarakhand", "High-altitude Himachal Pradesh", "Northern high passes of Sikkim"]
+  },
+  "e": {
+    "name": "E (Polar / Perpetual Snow)",
+    "color": "#f8fbc8",
+    "sub_type": "Perpetual Frost / Ice Cap Mountain Climate",
+    "climatic_mechanism": "Extreme elevation (>4,500–5,000 m) in the Trans-Himalayan, Karakoram, and Zanskar ranges; deep rain-shadow isolation behind the main Himalayan wall creates a high-altitude cold desert.",
+    "precipitation_regime": "Extremely dry (<10 cm annually in cold desert plains like Ladakh); precipitation falls almost exclusively as powdery snow and rime.",
+    "temperature_profile": "Mean temperature of all months remains near or below freezing (0°C); winter minimums routinely drop below -35°C to -45°C (e.g., Dras).",
+    "distinctive_features": "Dominated by vast valley glaciers (Siachen, Baltoro), rock screes, and bare frost-shattered peaks; completely devoid of natural tree cover; settlements depend entirely on glacial meltwater.",
+    "major_crops": "Nomadic wool/pashmina pastoralism; restricted oasis cultivation of Barley, Peas, Apricots, and Sea Buckthorn along meltwater channels",
+    "states_covered": ["Ladakh", "High mountain ranges of Jammu and Kashmir", "Northern border peaks of Himachal Pradesh"]
+  }
+}
